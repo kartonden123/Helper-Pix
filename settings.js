@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.0.1', 'Купленный Premium можно снять или заменить на выданный'],
         ['3.0.0', 'Покупка Premium: перевод на карту с подтверждением персонала в Discord, готов приём через ЮKassa'],
         ['2.10.0', 'Покупка Premium (10 ₽ неделя, 99 ₽ месяц, 1000 ₽ навсегда), история ролей и Premium, отметка «куплен / выдан»'],
         ['2.9.2', 'Роль «Главный Администратор» теперь просто «Администратор»'],

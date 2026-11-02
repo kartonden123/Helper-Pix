@@ -106,7 +106,8 @@
   function userRow(u, anim) {
     const mine = rank(S.role);
     const staff = u.role !== '';
-    const premBtn = mine >= 3 && !staff ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}"><option value="0"${tierOf(u) === '' ? ' selected' : ''}>Без Premium</option><option value="1"${tierOf(u) === 'premium' ? ' selected' : ''}>⭐ Premium</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
+    const isPaid = u.premSource === 'paid', paidLeft = isPaid ? (u.premUntil ? 'до ' + new Date(u.premUntil).toLocaleDateString('ru-RU') : 'навсегда') : '';
+    const premBtn = mine >= 3 && !staff && !(isPaid && mine < 4) ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}">${isPaid ? `<option value="paid" selected>🧾 Куплен ${paidLeft}</option>` : ''}<option value="0"${!isPaid && tierOf(u) === '' ? ' selected' : ''}>${isPaid ? '✖ Снять купленный' : 'Без Premium'}</option><option value="1"${!isPaid && tierOf(u) === 'premium' ? ' selected' : ''}>${isPaid ? '⭐ Заменить на выданный' : '⭐ Premium'}</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
     const roleSel = '';
     const dpvBtn = mine >= 2 && u.role !== 'owner' ? `<button class="mini" data-a="rp" data-id="${esc(u.id)}">🎭 Роли</button><button class="mini" data-a="hist" data-id="${esc(u.id)}" title="История ролей и Premium">🕘</button>` : '';
     const banBtn = mine >= 4 && canEdit(u) ? `<button class="mini${u.banned ? ' bad' : ''}" data-a="ban" data-id="${esc(u.id)}">${u.banned ? '✔ разблок.' : '🚫 блок'}</button>` : '';
@@ -126,7 +127,7 @@
     // сразу обновляем строку локально: список на сервере обновляется с задержкой до минуты
     if (cache) {
       const u = cache.users.find((x) => x.id === id);
-      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; } else if (kind === 'sp') { u.roles = r.roles; u.tier = (r.roles || []).some((x) => ['tester', 'partner', 'vip', 'dev', 'legend'].includes(x)) && !u.tier ? 'premium' : u.tier; u.premium = !!u.tier; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
+      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; u.premSource = r.premSource || ''; u.premUntil = undefined; } else if (kind === 'sp') { u.roles = r.roles; u.tier = (r.roles || []).some((x) => ['tester', 'partner', 'vip', 'dev', 'legend'].includes(x)) && !u.tier ? 'premium' : u.tier; u.premium = !!u.tier; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
     }
     return r;
   }
@@ -162,7 +163,7 @@
     else if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
     else if (a === 'role') el.onchange = async () => { await act('role', id, el.value); refreshRow(id); };
     else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); refreshRow(id); };
-    else if (a === 'tier') el.onchange = async () => { await act('prem', id, +el.value); refreshRow(id); };
+    else if (a === 'tier') el.onchange = async () => { if (el.value === 'paid') return; const u = cache.users.find((x) => x.id === id); if (u && u.premSource === 'paid' && !confirm(el.value === '0' ? 'Снять купленный Premium? Деньги не возвращаются автоматически.' : 'Заменить купленный Premium на выданный вручную? Срок покупки пропадёт.')) { refreshRow(id); return; } await act('prem', id, +el.value); refreshRow(id); };
     else el.onclick = async () => { const u = cache.users.find((x) => x.id === id); if (!u) return; await act(a, id, !u.banned); refreshRow(id); };
   }
   function bindUsers() {
