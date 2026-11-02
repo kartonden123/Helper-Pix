@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"><title>Polix Helper</title>
+<html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"><title>Helper Pix</title>
 <style>
 :root{--accent:#ff4d6d;--muted:#8d8593}
 *{box-sizing:border-box}
@@ -13,7 +13,7 @@ html,body{margin:0;height:100%;background:transparent;color:#f4f1f5;font:14px/1.
 p{color:#cfc8d3;margin:12px 0 18px}
 button{width:100%;border:0;border-radius:14px;padding:13px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(90deg,#5865f2,#7983f5);transition:filter .2s,transform .1s}
 button:hover{filter:brightness(1.12)}button:active{transform:scale(.99)}button:disabled{opacity:.55;cursor:default}
-.msg{margin-top:14px;min-height:20px;font-size:13px;color:#ff9d9d}
+.card{position:relative;overflow:hidden}.card:before{content:'';position:absolute;right:-90px;top:-110px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,77,109,.28),transparent 70%);pointer-events:none}.logo{border-radius:11px;box-shadow:0 0 22px rgba(255,77,109,.45)}.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}.chips i{font-style:normal;font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);color:#cfc8d3}button svg{width:20px;height:20px;vertical-align:-4px;margin-right:8px;fill:#fff}.msg{margin-top:14px;min-height:20px;font-size:13px;color:#ff9d9d}
 .msg.ok{color:#8ee6a8}
 .sub{margin-top:10px;font-size:11px;color:var(--muted)}
 </style></head><body>
@@ -21,12 +21,13 @@ button:hover{filter:brightness(1.12)}button:active{transform:scale(.99)}button:d
   <div class="by">By <b>KATO</b></div>
   <div class="brand" style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.png" alt="" style="width:38px;height:38px">Helper <span>Pix</span></div>
   <p>Чтобы пользоваться хелпером, нужно войти через Discord. Программа проверит, что вы состоите на Discord-сервере Helper Pix. Пароль Discord она не видит.</p>
-  <button id="go">Войти через Discord</button>
+  <div class="chips"><i>🔎 Поиск за секунду</i><i>🃏 Покер</i><i>🧰 Инструменты</i><i>💬 Чат</i><i>⭐ Premium</i></div>
+  <button id="go"><svg viewBox="0 0 24 24"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18 18 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 0 13.5.3 18a20 20 0 0 0 6 3l1.3-2.1-2-1 .5-.4a14 14 0 0 0 11.8 0l.5.4-2 1L17.7 21a20 20 0 0 0 6-3c.4-5.2-.7-9.700-3.400-13.600zM8.500 15.300c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400zm7 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400z"/></svg>Войти через Discord</button>
   <div class="msg" id="msg"></div>
   <div class="sub" style="margin-bottom:6px">Для статистики программа передаёт ваш Discord ID и имя.</div><div class="sub">Alt+Q — скрыть окно</div>
 </div></div>
 <script>
-const go=document.getElementById('go'),msg=document.getElementById('msg');
+const go=document.getElementById('go'),msg=document.getElementById('msg');const GOHTML=go.innerHTML;
 function show(s){
   if(s&&s.reason){msg.className='msg';msg.textContent=s.reason;}
   else if(s&&s.user){msg.className='msg ok';msg.textContent='Вошли как '+s.user.name;}
@@ -35,7 +36,7 @@ if(window.overlay&&window.overlay.authState)window.overlay.authState().then(show
 go.onclick=async()=>{
   go.disabled=true;go.textContent='Ждём подтверждения в браузере…';msg.textContent='';
   const s=await window.overlay.login();
-  go.disabled=false;go.textContent='Войти через Discord';show(s);
+  go.disabled=false;go.innerHTML=GOHTML;show(s);
 };
 if(window.overlay&&window.overlay.resize){const w=document.querySelector('.wrap');let lh=0;const fit=()=>{const h=Math.ceil(w.getBoundingClientRect().height);if(h&&Math.abs(h-lh)>1){lh=h;window.overlay.resize(h);}};new ResizeObserver(fit).observe(w);fit();}
 </script><script src="anim.js"></script>

@@ -1,4 +1,6 @@
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, dialog, ipcMain, Notification, desktopCapturer } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, dialog, ipcMain, Notification, desktopCapturer, net } = require('electron');
+const gfetch = globalThis.fetch;
+const fetch = (u, i) => (app.isReady() ? net.fetch(u, i) : gfetch(u, i));   // через сетевой стек Chromium: системный прокси и VPN работают
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');

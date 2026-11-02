@@ -1,4 +1,8 @@
-const { app, shell, safeStorage } = require('electron');
+const { app, shell, safeStorage, net } = require('electron');
+// сетевые запросы идут через Chromium: он учитывает системный прокси и VPN, в отличие от встроенного fetch Node
+const gfetch = globalThis.fetch;
+const fetch = (u, i) => (app.isReady() ? net.fetch(u, i) : gfetch(u, i));
+const netMsg = (e) => (/fetch failed|ERR_|ENOTFOUND|ETIMEDOUT|ECONNRESET|network/i.test(String(e && e.message)) ? 'Нет связи с Discord. Проверьте интернет, VPN или прокси и попробуйте снова.' : 'Ошибка входа: ' + (e && e.message));
 const http = require('http');
 const crypto = require('crypto');
 const path = require('path');
@@ -105,7 +109,7 @@ function login() {
         page(v.ok ? 'Готово! Вернитесь в Helper Pix.' : esc(v.reason));
         finish({ ok: v.ok, user: publicUser(v.user), reason: v.reason });
       } catch (e) {
-        page('Ошибка входа.'); finish({ ok: false, user: null, reason: 'Ошибка входа: ' + e.message });
+        page('Ошибка входа.'); finish({ ok: false, user: null, reason: netMsg(e) });
       }
     });
     server.on('error', (e) => finish({ ok: false, user: null, reason: 'Порт ' + PORT + ' занят: ' + e.code }));
