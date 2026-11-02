@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.14', 'Premium приходит сразу: экран покупки проверяет заказ каждые 3 секунды, исправлено, что после ручного снятия Premium покупка не включалась'],
         ['3.1.13', 'Экран покупки: заголовок меняется вместе с вкладкой Premium / Ультра'],
         ['3.1.12', 'Экран покупки: заголовок больше не обрезается, убрана устаревшая надпись «Оплата подтверждена»'],
         ['3.1.11', 'Иконки в верхней панели раскрываются по клику на «···», а не по наведению'],

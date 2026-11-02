@@ -129,7 +129,14 @@
       const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) alert(r.error); draw(); };
     };
     await draw();
-    timer = setInterval(async () => { if (!$('.det') || !/Premium|Премиум/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer); draw(); }, 20000);
+    let sig = '';
+    timer = setInterval(async () => {
+      if (!$('.det') || !/Premium|Премиум/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer);
+      const d = await api('GET', '/pay/info'); if (!d || d.error) return;
+      const n = JSON.stringify([d.order && d.order.status, d.premium && d.premium.source, d.premium && d.premium.tier, d.premium && d.premium.until]);
+      if (sig && n !== sig) { draw(); if (window.PHX_refreshAuth) window.PHX_refreshAuth(true); }
+      sig = n;
+    }, 3000);
   }
 
   window.PHX_tools2 = { premium, pct, counter, stopwatch, numbers, random };
