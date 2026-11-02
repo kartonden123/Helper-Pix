@@ -46,6 +46,7 @@
   .det h2{letter-spacing:.01em}.back{border-radius:8px}
   /* ---- размытие фона под плашками ---- */
   .bar,.panel{position:relative;isolation:isolate}
+  .bar>.gl{-webkit-app-region:drag}
   .gl{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
   .gl canvas{position:absolute;inset:0;width:100%;height:100%;filter:blur(7px) saturate(1.35) brightness(.78);transform:scale(1.08)}
   .gl::after{content:"";position:absolute;inset:0;background:rgba(22,19,26,.5)}
