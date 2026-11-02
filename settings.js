@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['2.8.5', 'Покер: все комбинации до флеш-рояля, шансы победы, аутс; ДПВ — дополнительные возможности'],
         ['2.8.4', 'Обновление приходит уведомлением, окно само не открывается'],
         ['2.8.3', 'Теперь Helper Pix: вход через сервер Helper Pix, формы и приглашение в Инструментах'],
         ['2.8.2', 'Онлайн теперь внутри строки меню'],
@@ -150,7 +151,7 @@
         <kbd>Esc</kbd><span>Назад; на главной скрыть меню</span><kbd>↑ ↓</kbd><span>Выбор статьи, в режиме «список слева» листание</span>
         <kbd>Enter</kbd><span>Открыть статью</span><kbd>Ctrl+1…9</kbd><span>Открыть результат по номеру (Premium)</span>
         <kbd>Ctrl+D</kbd><span>В избранное (Premium)</span><kbd>Ctrl+B</kbd><span>В дело (Premium)</span>
-        <kbd>Ctrl+I</kbd><span>Спросить ИИ</span><kbd>Alt+P</kbd><span>Режим покера (ДПВ)</span><kbd>Ctrl+Alt+Q</kbd><span>Показать или скрыть меню (запасная)</span></div>`);
+        <kbd>Ctrl+I</kbd><span>Спросить ИИ</span><kbd>Alt+P</kbd><span>Доп. возможности (ДПВ)</span><kbd>Ctrl+Alt+Q</kbd><span>Показать или скрыть меню (запасная)</span></div>`);
     if (id === 'data') return card('Перенос', row('Экспорт и импорт', 'Избранное, дело, заметки, шаблоны и настройки одной строкой', btn('stBak', '💾 Открыть', ''), prem ? '' : P)) +
       card('Очистка (нажмите дважды)',
       row('Избранное', '', btn('stC_ph_fav', 'Очистить', 'warn')) + row('Недавние статьи', '', btn('stC_ph_hist', 'Очистить', 'warn')) +

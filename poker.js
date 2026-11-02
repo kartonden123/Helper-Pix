@@ -21,7 +21,7 @@
     const pack = (cat, arr) => { let v = cat; for (let i = 0; i < 5; i++) v = v * 16 + (arr[i] === undefined ? 0 : arr[i] + 1); return v; };
     if (fs >= 0) {
       let m = 0; for (const r of sc[fs]) m |= 1 << r;
-      const h = straightHigh(m); if (h >= 0) return pack(8, [h]);
+      const h = straightHigh(m); if (h >= 0) return pack(h === 12 ? 9 : 8, [h]);
     }
     const quads = [], trips = [], pairs = [], singles = [];
     for (let r = 12; r >= 0; r--) { if (rc[r] === 4) quads.push(r); else if (rc[r] === 3) trips.push(r); else if (rc[r] === 2) pairs.push(r); else if (rc[r] === 1) singles.push(r); }
@@ -40,7 +40,7 @@
   function equity(hole, board, opps, sims) {
     const used = new Set([...hole, ...board]);
     const deck = []; for (let c = 0; c < 52; c++) if (!used.has(c)) deck.push(c);
-    let win = 0, tie = 0, wins = 0, ties = 0; const cats = new Array(9).fill(0);
+    let win = 0, tie = 0, wins = 0, ties = 0; const cats = new Array(10).fill(0);
     const need = 5 - board.length;
     for (let i = 0; i < sims; i++) {
       // частичная перетасовка
@@ -60,7 +60,7 @@
     return (win + tie) / sims;
   }
 
-  const CATS = ['Старшая карта', 'Пара', 'Две пары', 'Тройка (сет)', 'Стрит', 'Флеш', 'Фулл-хаус', 'Каре', 'Стрит-флеш'];
+  const CATS = ['Старшая карта', 'Пара', 'Две пары', 'Тройка (сет)', 'Стрит', 'Флеш', 'Фулл-хаус', 'Каре', 'Стрит-флеш', 'Флеш-рояль'];
   // сколько карт колоды улучшают комбинацию (на флопе и тёрне)
   function outs(hole, board) {
     if (board.length < 3 || board.length > 4) return null;
@@ -131,7 +131,7 @@
   function resHtml() {
     const [txt, col] = advice(res.eq), d = res.d, pc = (x) => (x * 100).toFixed(1) + '%';
     const o = res.outs;
-    const catsHtml = d.cats.map((v, k) => [k, v]).filter((x) => x[1] >= 0.0005).reverse().map(([k, v]) => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px"><span>' + CATS[k] + '</span><b>' + pc(v) + '</b></div>').join('');
+    const catsHtml = d.cats.map((v, k) => [k, v]).filter((x) => x[1] >= 0.0001).reverse().map(([k, v]) => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px"><span>' + CATS[k] + '</span><b>' + pc(v) + '</b></div>').join('');
     const ev = res.need !== null ? res.eq * (pot + call) - (1 - res.eq) * call : null;
     return `<div class="pk-res"><div class="big">${pc(res.eq)}</div><div class="pk-bar"><i style="width:${(res.eq * 100).toFixed(0)}%"></i></div>
       <div class="pk-adv" style="color:${col}">${txt}</div>
@@ -151,9 +151,9 @@
     $('#pkOut').innerHTML = resHtml();
   }
   function openPoker() {
-    if (!S.poker) return X.gate('Режим покера', 'Доступен Главному Администратору и роли ДПВ.');
+    if (!S.poker) return X.gate('Дополнительные возможности', 'Доступны Главному Администратору и роли ДПВ.');
     view = 'memo'; panel.classList.add('on');
-    list.innerHTML = backBtn() + `<div class="det"><h2>♠ Режим покера</h2><p class="t">Texas Hold'em: выберите карты, число оппонентов, банк и ставку, и хелпер посчитает шанс и подскажет действие.</p><div id="pkRoot"></div></div>`;
+    list.innerHTML = backBtn() + `<div class="det"><h2>♠ Дополнительные возможности: покер</h2><p class="t">Texas Hold'em: выберите карты, число оппонентов, банк и ставку, и хелпер посчитает шанс и подскажет действие.</p><div id="pkRoot"></div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
     draw();
   }

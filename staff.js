@@ -7,7 +7,7 @@
   const $ = (s) => document.querySelector(s);
   const { LS } = X;
   // особые роли: ключ, значок, название, цвет, что даёт
-  const SP = [['dpv', '♠', 'ДПВ', '#3ddc84', 'режим покера'], ['tester', '🧪', 'Тестер', '#7cf0c9', 'Premium'], ['curator', '📚', 'Куратор', '#c48bff', ''], ['helper', '🤝', 'Хелпер', '#6bd5ff', ''], ['media', '🎬', 'Медиа', '#ff7ad9', ''], ['partner', '🏷', 'Партнёр', '#ffb84d', 'Premium'], ['vip', '👑', 'VIP', '#ffe066', 'Premium'], ['dev', '🛠', 'Разработчик', '#9bff6b', 'Premium'], ['legend', '🏆', 'Легенда', '#ff9f5a', 'Premium'], ['event', '🎉', 'Ивент-мейкер', '#ff6b9d', ''], ['support', '💬', 'Поддержка', '#5ef0ff', '']];
+  const SP = [['dpv', '♠', 'ДПВ', '#3ddc84', 'дополнительные возможности'], ['tester', '🧪', 'Тестер', '#7cf0c9', 'Premium'], ['curator', '📚', 'Куратор', '#c48bff', ''], ['helper', '🤝', 'Хелпер', '#6bd5ff', ''], ['media', '🎬', 'Медиа', '#ff7ad9', ''], ['partner', '🏷', 'Партнёр', '#ffb84d', 'Premium'], ['vip', '👑', 'VIP', '#ffe066', 'Premium'], ['dev', '🛠', 'Разработчик', '#9bff6b', 'Premium'], ['legend', '🏆', 'Легенда', '#ff9f5a', 'Premium'], ['event', '🎉', 'Ивент-мейкер', '#ff6b9d', ''], ['support', '💬', 'Поддержка', '#5ef0ff', '']];
   const RN = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
   const RK = { owner: 5, admin: 4, jr: 3, smod: 2, mod: 1 };
   const RC = { owner: '#ff2d55', admin: '#ff8a3d', jr: '#ffd34d', smod: '#b387ff', mod: '#6bb7ff' };
