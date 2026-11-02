@@ -100,9 +100,11 @@
   async function premium() {
     shell('⭐ Premium', '<div class="skl" style="height:56px"></div><div class="skl" style="height:120px"></div><div class="skl"></div>');
     const api = window.overlay && window.overlay.staffApi; if (!api) return;
-    let busy = false, sel = 'month', timer = null;
+    let busy = false, sel = 'month', timer = null, sig = '';
+    const sigOf = (d) => JSON.stringify([d.order && d.order.status, d.order && d.order.code, d.premium && d.premium.source, d.premium && d.premium.tier, d.premium && d.premium.until]);
     const draw = async () => {
       const d = await api('GET', '/pay/info'); const box = $('#pmBox'); if (!box && !$('.det')) return;
+      if (d && !d.error) sig = sigOf(d);
       if (!d || d.error) { $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">' + eh((d && d.error) || 'Ошибка') + '</p>'; return; }
       const o = d.order, hist = (d.history || []).slice(0, 8);
       const isU = sel[0] === 'u', tk = isU ? ULTRA_ORDER : PLAN_ORDER, per = { week: 'в неделю', month: 'в месяц', forever: 'один раз' };
@@ -135,14 +137,13 @@
       const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) notice(r.error); draw(); };
     };
     await draw();
-    let sig = '';
     timer = setInterval(async () => {
       if (!$('.det') || !/Premium|Премиум/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer);
       const d = await api('GET', '/pay/info'); if (!d || d.error) return;
-      const n = JSON.stringify([d.order && d.order.status, d.premium && d.premium.source, d.premium && d.premium.tier, d.premium && d.premium.until]);
-      if (sig && n !== sig) { draw(); if (window.PHX_refreshAuth) window.PHX_refreshAuth(true); }
-      sig = n;
-    }, 3000);
+      if (sigOf(d) !== sig) { draw(); if (window.PHX_refreshAuth) window.PHX_refreshAuth(true); }
+    }, 2000);
+    if (window.overlay.onMeChanged) window.overlay.onMeChanged(() => { if ($('.det') && /Premium|Премиум/.test(($('.det h2') || {}).textContent || '')) draw(); });   // сервер сообщил об изменении сразу
+    if (window.overlay.onShow) window.overlay.onShow(() => { if ($('.det') && /Premium|Премиум/.test(($('.det h2') || {}).textContent || '')) draw(); });
   }
 
   window.PHX_tools2 = { premium, pct, counter, stopwatch, numbers, random };
