@@ -91,6 +91,12 @@
     const until = p.source === 'paid' ? (p.until ? ', действует до <b>' + dateRu(p.until) + '</b>' : ', <b>навсегда</b>') : '';
     return '<span class="rbadge" style="--c:' + c + '"><i class="rdot"></i>' + (p.tier === 'ultra' ? '💎 Ультра Премиум' : '⭐ Premium') + ' · ' + t + '</span>' + until;
   }
+  function notice(msg) {
+    const n = document.createElement('div');
+    n.textContent = msg;
+    n.style.cssText = 'position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:99999;background:#3a1620;border:1px solid rgba(255,100,120,.6);color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.6)';
+    document.body.appendChild(n); setTimeout(() => n.remove(), 4000);
+  }
   async function premium() {
     shell('⭐ Premium', '<p class="t">Загрузка…</p>');
     const api = window.overlay && window.overlay.staffApi; if (!api) return;
@@ -122,11 +128,11 @@
       $('#bk') && ($('#bk').onclick = () => { clearInterval(timer); goBack(); });
       document.querySelectorAll('.pm-tab').forEach((b) => (b.onclick = () => { sel = b.dataset.t === 'ultra' ? 'umonth' : 'month'; draw(); }));
       document.querySelectorAll('.pm-plan').forEach((b) => (b.onclick = () => { sel = b.dataset.p; draw(); }));
-      const buy = $('#pmBuy'); if (buy) buy.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel }); busy = false; if (r && r.error) alert(r.error); else if (r && r.order && r.order.url && window.overlay.openUrl) window.overlay.openUrl(r.order.url); draw(); };
+      const buy = $('#pmBuy'); if (buy) buy.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel }); busy = false; if (r && r.error) notice(r.error); else if (r && r.order && r.order.url && window.overlay.openUrl) window.overlay.openUrl(r.order.url); draw(); };
       const py = $('#pmPay'); if (py) py.onclick = () => window.overlay.openUrl && window.overlay.openUrl(o.url);
       const ck = $('#pmCheck'); if (ck) ck.onclick = async () => { if (busy) return; busy = true; await api('POST', '/pay/check', { code: o.code }); busy = false; draw(); };
       const cp = $('#pmCopy'); if (cp) cp.onclick = () => X.copy(String(d.card).replace(/\s/g, ''), cp);
-      const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) alert(r.error); draw(); };
+      const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) notice(r.error); draw(); };
     };
     await draw();
     let sig = '';

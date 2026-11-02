@@ -165,7 +165,7 @@
     else if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
     else if (a === 'role') el.onchange = async () => { await act('role', id, el.value); refreshRow(id); };
     else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); refreshRow(id); };
-    else if (a === 'tier') el.onchange = async () => { if (el.value === 'paid') return; const u = cache.users.find((x) => x.id === id); if (el.value.startsWith('pay:')) { if (!confirm('Выдать купленный тариф без оплаты? Он будет отмечен как купленный.')) { refreshRow(id); return; } await act('prem', id, el.value); refreshRow(id); return; } if (u && u.premSource === 'paid' && !confirm(el.value === '0' ? 'Снять купленный Premium? Деньги не возвращаются автоматически.' : 'Заменить купленный Premium на выданный вручную? Срок покупки пропадёт.')) { refreshRow(id); return; } await act('prem', id, +el.value); refreshRow(id); };
+    else if (a === 'tier') el.onchange = async () => { if (el.value === 'paid') return; const u = cache.users.find((x) => x.id === id); if (el.value.startsWith('pay:')) { if (!(await dlg('Выдать купленный тариф без оплаты?', 'Он будет отмечен как купленный.', 'Выдать'))) { refreshRow(id); return; } await act('prem', id, el.value); refreshRow(id); return; } if (u && u.premSource === 'paid' && !(await dlg(el.value === '0' ? 'Снять купленный Premium?' : 'Заменить купленный Premium на выданный?', el.value === '0' ? 'Деньги покупателю автоматически не возвращаются.' : 'Срок покупки пропадёт.', el.value === '0' ? 'Снять' : 'Заменить'))) { refreshRow(id); return; } await act('prem', id, +el.value); refreshRow(id); };
     else el.onclick = async () => { const u = cache.users.find((x) => x.id === id); if (!u) return; await act(a, id, !u.banned); refreshRow(id); };
   }
   function bindUsers() {
@@ -257,6 +257,23 @@
     el.querySelector('button').onclick = () => { LS.set('ph_ann_seen', a.id); el.classList.remove('on'); };
   }
 
+
+  // свой диалог подтверждения: системный confirm() сворачивает оверлей, этот живёт внутри меню
+  function dlg(title, text, okLabel) {
+    return new Promise((res) => {
+      const w = document.createElement('div');
+      w.style.cssText = 'position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);animation:none';
+      w.innerHTML = '<div style="width:min(380px,90vw);background:var(--solid,#1d1a20);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:20px 22px;box-shadow:0 24px 70px -10px rgba(0,0,0,.8)"><div style="font-size:16px;font-weight:700;margin-bottom:6px">' + title + '</div><div style="font-size:13px;color:var(--muted);line-height:1.5">' + (text || '') + '</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="abtn" data-r="0">Отмена</button><button class="abtn on" data-r="1">' + (okLabel || 'Да') + '</button></div></div>';
+      const done = (v) => { document.removeEventListener('keydown', key, true); w.remove(); res(v); };
+      const key = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); done(false); } else if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); done(true); } };
+      w.addEventListener('mousedown', (e) => e.stopPropagation());
+      w.querySelectorAll('button').forEach((b) => (b.onclick = () => done(b.dataset.r === '1')));
+      w.addEventListener('click', (e) => { if (e.target === w) done(false); });
+      document.addEventListener('keydown', key, true);
+      document.body.appendChild(w);
+      w.querySelector('[data-r="1"]').focus();
+    });
+  }
   function apply(s) {
     if (!s) return;
     S.role = s.role || ''; S.rank = rank(S.role); S.premium = !!s.premium; S.admin = S.role === 'owner'; S.tier = s.tier || (S.premium ? 'premium' : ''); S.ultra = S.tier === 'ultra'; S.roles = s.roles || (S.role ? [S.role] : []); S.poker = S.role === 'owner' || S.roles.includes('dpv');
