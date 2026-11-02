@@ -99,7 +99,7 @@
     if (window.overlay.onBounds) window.overlay.onBounds((i) => { info = i; });
     if (window.overlay.uiPrefs) window.overlay.uiPrefs().then((p) => { try { localStorage.setItem('ph_autohide', JSON.stringify(!!(p && p.autohide))); } catch (e) {} setSnap(p && p.snap); });
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') stopStream(); else if (snap) { ensureCanvases(); startStream(); } });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') stopStream(); else if (snap) { ensureCanvases(); setTimeout(startStream, 500); } });
   const ui = document.getElementById('ui');
   if (ui && window.MutationObserver) new MutationObserver(() => { if (snap) ensureCanvases(); }).observe(ui, { childList: true, subtree: true });
 })();

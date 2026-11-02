@@ -120,7 +120,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      backgroundThrottling: false   // скрытое окно не «засыпает», поэтому открывается без задержки
     }
   });
   win.setAlwaysOnTop(true, 'screen-saver');
@@ -172,7 +173,7 @@ function showWin() {
   applyProtection();
   win.show(); win.focus(); win.webContents.focus(); visible = true;
   win.webContents.send('ov-show');
-  if (!was) setTimeout(() => { if (win && !win.isDestroyed()) win.setOpacity(1); }, 300);
+  if (!was) setTimeout(() => { if (win && !win.isDestroyed()) win.setOpacity(1); }, 120);
   updateTrayMenu();
 }
 function hideWin() {
@@ -268,6 +269,18 @@ ipcMain.on('ov-resize', (_e, h) => {
   win.setContentSize(w, Math.min(Math.max(Math.round(h), 80), max));
 });
 ipcMain.on('ov-hide', () => hideWin());
+// копия настроек интерфейса (ph_*): localStorage Chromium пишет на диск с задержкой и может потерять запись при выходе
+const LS_FILE = path.join(app.getPath('userData'), 'ls-mirror.json');
+let lsMem = {}; try { lsMem = JSON.parse(fs.readFileSync(LS_FILE, 'utf8')) || {}; } catch (e) {}
+let lsTimer = null;
+const lsFlush = () => { clearTimeout(lsTimer); lsTimer = null; try { fs.writeFileSync(LS_FILE, JSON.stringify(lsMem)); } catch (e) {} };
+ipcMain.on('ls-set', (_e, k, v) => {
+  if (typeof k !== 'string' || !/^ph_[A-Za-z0-9_]+$/.test(k)) return;
+  if (v === null) delete lsMem[k]; else lsMem[k] = String(v).slice(0, 300000);
+  if (!lsTimer) lsTimer = setTimeout(lsFlush, 300);
+});
+ipcMain.on('ls-load', (e) => { e.returnValue = lsMem; });
+app.on('before-quit', lsFlush);
 ipcMain.on('ov-ready', () => { if (win && !win.isDestroyed()) win.setOpacity(1); });
 // ИИ-помощник: запрос идёт на сервер статистики, там проверяются Discord-аккаунт и дневной лимит
 ipcMain.handle('ai-ask', async (_e, question, context) => {
