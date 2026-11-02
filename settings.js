@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.2.0', 'Большое обновление: окно «Что нового» после обновления, предупреждение об окончании Premium, подтверждения внутри меню, новый экран покупки, Ультра Премиум, режим «Смотреть как», скрытие роли, исправления обновлений и анимаций'],
         ['3.1.16', 'Исправлен показ срока выданного купленного тарифа: «неделя» больше не отображается как «навсегда»'],
         ['3.1.15', 'Подтверждения внутри меню: оверлей больше не сворачивается при выдаче купленного Premium'],
         ['3.1.14', 'Premium приходит сразу: экран покупки проверяет заказ каждые 3 секунды, исправлено, что после ручного снятия Premium покупка не включалась'],
@@ -312,4 +313,32 @@
   if (ov.uiPrefs) ov.uiPrefs().then((p) => { main = p || {}; const h = $('#tabhint'); if (h && main.hotkey && main.hotkey !== 'Alt+Q') h.innerHTML = esc(main.hotkey.replace('Control', 'Ctrl')) + ' — показать / скрыть · <b>Esc</b> — назад'; }).catch(() => {});
   setTimeout(syncAccent, 1500);
   window.PHX_settings = { openSettings, applyUI };
+
+  // после обновления один раз показываем, что нового (по записям из «О программе»)
+  setTimeout(() => {
+    const ver = ov.version || ''; if (!ver) return;
+    const last = LS.get('ph_lastver', ''); LS.set('ph_lastver', ver);
+    if (!last || last === ver || document.getElementById('phNews')) return;
+    const items = NEWS.filter(([v]) => v === ver || NEWS.findIndex(([x]) => x === v) < 5).slice(0, 5);
+    const w = document.createElement('div'); w.id = 'phNews';
+    w.style.cssText = 'position:fixed;inset:0;z-index:99998;display:grid;place-items:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)';
+    w.innerHTML = '<div style="width:min(440px,92vw);background:var(--solid,#1d1a20);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:22px;box-shadow:0 24px 70px -10px rgba(0,0,0,.8)"><div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.08em">ОБНОВЛЕНО ДО ' + esc(ver) + '</div><div style="font-size:20px;font-weight:800;margin:4px 0 12px">Что нового</div>' + items.map(([v, t]) => '<div style="display:grid;grid-template-columns:54px 1fr;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07);font-size:13px"><b style="color:var(--accent)">' + esc(v) + '</b><span style="color:var(--muted);line-height:1.45">' + esc(t) + '</span></div>').join('') + '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="abtn on" id="phNewsOk">Понятно</button></div></div>';
+    document.body.appendChild(w);
+    const close = () => w.remove(); w.querySelector('#phNewsOk').onclick = close; w.addEventListener('click', (e) => { if (e.target === w) close(); });
+  }, 2500);
+
+  // предупреждение, если купленный Premium скоро закончится (раз в сутки)
+  setTimeout(() => {
+    if (!ov.authState) return;
+    ov.authState(true).then((a) => {
+      if (!a || a.premSource !== 'paid' || !a.premUntil) return;
+      const left = a.premUntil - Date.now(); if (left <= 0 || left > 2 * 86400000) return;
+      const day = new Date().toDateString(); if (LS.get('ph_expwarn', '') === day) return; LS.set('ph_expwarn', day);
+      const n = document.createElement('div');
+      n.style.cssText = 'position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:99997;background:var(--solid,#1d1a20);border:1px solid rgba(255,196,60,.5);color:#fff;padding:12px 18px;border-radius:14px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.6);cursor:pointer';
+      n.textContent = '⏳ Ваш Premium заканчивается ' + new Date(a.premUntil).toLocaleDateString('ru-RU') + '. Нажмите, чтобы продлить';
+      n.onclick = () => { n.remove(); if (window.PHX_tools2) window.PHX_tools2.premium(); };
+      document.body.appendChild(n); setTimeout(() => n.remove(), 9000);
+    }).catch(() => {});
+  }, 5000);
 })();
