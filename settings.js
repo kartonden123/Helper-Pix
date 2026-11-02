@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.10', 'Панель иконок переделана: раскрывается поверх поиска без дёрганья макета'],
         ['3.1.9', 'Обновления: пока новая версия собирается на GitHub, хелпер молча повторяет проверку и не пишет «ошибка»'],
         ['3.1.8', 'Исправлена анимация при открытии меню: больше никаких повторных проигрываний и дёрганья'],
         ['3.1.7', 'Иконки в верхней панели собраны в «⋯» и плавно раскрываются при наведении, Администратор может снять себе Premium'],
