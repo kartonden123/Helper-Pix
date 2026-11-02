@@ -98,7 +98,7 @@
     document.body.appendChild(n); setTimeout(() => n.remove(), 4000);
   }
   async function premium() {
-    shell('⭐ Premium', '<p class="t">Загрузка…</p>');
+    shell('⭐ Premium', '<div class="skl" style="height:56px"></div><div class="skl" style="height:120px"></div><div class="skl"></div>');
     const api = window.overlay && window.overlay.staffApi; if (!api) return;
     let busy = false, sel = 'month', timer = null;
     const draw = async () => {

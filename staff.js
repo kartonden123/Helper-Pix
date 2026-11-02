@@ -67,6 +67,10 @@
   const say = (t, ok) => { lastMsg = { t, ok }; paintMsg(); };
   const api = (m, p, b) => window.overlay.staffApi(m, p, b);
 
+
+  // заглушки загрузки: мерцающие полоски вместо слова «Загрузка…»
+  if (!document.getElementById('phSkel')) { const st = document.createElement('style'); st.id = 'phSkel'; st.textContent = '.skl{height:38px;border-radius:12px;margin:8px 0;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.12),rgba(255,255,255,.05));background-size:220% 100%;animation:sklm 1.2s linear infinite}@keyframes sklm{to{background-position:-220% 0}}.stchips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px}.stchip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--muted);font-size:12px;cursor:pointer}.stchip.on{background:var(--accent);border-color:transparent;color:#fff}.ord{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.04);margin:5px 0;font-size:12px}.ord b.ok{color:#3ddc84}.ord b.no{color:#ff8a8a}.ord b.wt{color:#ffc43c}'; document.head.appendChild(st); }
+  const skel = (n) => Array.from({ length: n || 5 }, () => '<div class="skl"></div>').join('');
   /* ---------- В сети: видно всем ---------- */
   let onlineCache = null, onlineAt = 0;
   async function fetchOnline() { const d = await api('GET', '/online'); if (d && !d.error) { onlineCache = d; onlineAt = Date.now(); } return d; }
@@ -78,7 +82,7 @@
   async function openOnline() {
     view = 'memo'; panel.classList.add('on'); $('#cnt').textContent = '';
     if (onlineCache) { paintOnline(onlineCache, Date.now() - onlineAt > 4000); if (Date.now() - onlineAt <= 4000) return; }
-    else { list.innerHTML = backBtn() + '<div class="det"><h2>👥 В сети</h2><p class="t">Загрузка…</p></div>'; $('#bk').onclick = goBack; }
+    else { list.innerHTML = backBtn() + '<div class="det"><h2>👥 В сети</h2>' + skel(6) + '</div>'; $('#bk').onclick = goBack; }
     const d = await fetchOnline();
     if (view !== 'memo') return;
     if (!d || d.error) { if (!onlineCache) { list.innerHTML = backBtn() + `<div class="det"><h2>👥 В сети</h2><p class="t">${esc((d && d.error) || 'Ошибка')}</p></div>`; $('#bk').onclick = goBack; } return; }
@@ -189,12 +193,14 @@
       };
     });
   }
+  let chip = 'all';
   function drawUsers() {
     const box = $('#stBody'); if (!box || !cache) return;
     const d = cache;
     box.innerHTML = `<div class="adm-top"><div><small>Всего</small><b>${d.total}</b></div><div><small>В сети</small><b style="color:#3ddc84">${d.online}</b></div><div><small>За 24 часа</small><b>${d.day}</b></div><div><small>Premium</small><b>${d.premiumCount}</b></div></div>
-      <input class="fld" id="stFilter" placeholder="Поиск по имени или ID" value="${esc(filt)}"><div class="actions"><button class="abtn" id="stCopy">📋 Копировать список</button></div><div class="stmsg" id="stMsg"></div><div id="stList"></div>`;
-    let firstPaint = true; const paint = () => { const f = filt.toLowerCase(); const arr = d.users.filter((u) => !f || (u.name || '').toLowerCase().includes(f) || u.id.includes(f)); $('#stList').innerHTML = arr.map((u) => userRow(u, firstPaint)).join('') || '<div class="empty">Никого не найдено</div>'; bindUsers(); paintMsg(); firstPaint = false; };
+      <input class="fld" id="stFilter" placeholder="Поиск по имени или ID" value="${esc(filt)}"><div class="stchips" id="stChips">${[['all','Все'],['on','В сети'],['prem','Premium'],['staff','Персонал'],['ban','Заблок.']].map(([k,l]) => `<button class="stchip${chip === k ? ' on' : ''}" data-c="${k}">${l}</button>`).join('')}</div><div class="actions"><button class="abtn" id="stCopy">📋 Копировать список</button></div><div class="stmsg" id="stMsg"></div><div id="stList"></div>`;
+    let firstPaint = true; const paint = () => { const f = filt.toLowerCase(); const arr = d.users.filter((u) => (!f || (u.name || '').toLowerCase().includes(f) || u.id.includes(f)) && (chip === 'all' || (chip === 'on' && u.online) || (chip === 'prem' && tierOf(u) !== '') || (chip === 'staff' && u.role) || (chip === 'ban' && u.banned))); $('#stList').innerHTML = arr.map((u) => userRow(u, firstPaint)).join('') || '<div class="empty">Никого не найдено</div>'; bindUsers(); paintMsg(); firstPaint = false; };
+    $('#stChips').querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => { chip = b.dataset.c; $('#stChips').querySelectorAll('[data-c]').forEach((x) => x.classList.toggle('on', x === b)); paint(); }));
     const fi = $('#stFilter'); fi.addEventListener('keydown', (e) => e.stopPropagation()); fi.oninput = () => { filt = fi.value; paint(); };
     $('#stCopy').onclick = () => X.copy(d.users.map((u) => u.name + ' | ' + u.id + ' | ' + (RN[u.role] || '') + ' | ' + tierOf(u) + ' | v' + (u.version || '?')).join('\n'), $('#stCopy'));
     paint();
@@ -206,7 +212,7 @@
     const mine = rank(S.role);
     list.innerHTML = backBtn() + `<div class="det"><h2>👑 Панель персонала</h2><p class="t">Ваша роль: ${rb(S.role) || 'нет'}</p>
       <div class="stab"><button class="abtn${tab === 'users' ? ' on' : ''}" data-t="users">👥 Люди</button>${mine >= 2 ? `<button class="abtn${tab === 'id' ? ' on' : ''}" data-t="id">🔑 По Discord ID</button>` : ''}${mine >= 4 ? `<button class="abtn${tab === 'ann' ? ' on' : ''}" data-t="ann">📢 Объявление</button>${S.role === 'owner' ? `<button class="abtn${tab === 'pay' ? ' on' : ''}" data-t="pay">💳 Оплата</button>` : ''}` : ''}</div>
-      <div id="stBody"><p class="t">Загрузка…</p></div></div>`;
+      <div id="stBody">${skel(6)}</div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
     list.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => openStaff(b.dataset.t)));
     if (tab === 'users') {
@@ -240,6 +246,8 @@
     } else if (tab === 'pay' && S.role === 'owner') {
       $('#stBody').innerHTML = '<p class="t">Карта, на которую покупатели переводят деньги за Premium. Её увидят только те, кто открыл экран покупки. Заявки на проверку приходят в канал персонала в Discord с кнопками.</p><input class="fld" id="pyCard" placeholder="Номер карты или телефона" maxlength="25"><input class="fld" id="pyName" placeholder="Получатель (имя, по желанию)" maxlength="40" style="margin-top:8px"><div class="stmsg" id="stMsg"></div><div class="actions"><button class="abtn on" id="pySave">Сохранить</button></div>';
       ['pyCard', 'pyName'].forEach((i) => $('#' + i).addEventListener('keydown', (e) => e.stopPropagation()));
+      const ordBox = document.createElement('div'); ordBox.innerHTML = '<h3 style="margin:18px 0 6px">История заказов</h3>' + skel(3); $('#stBody').appendChild(ordBox);
+      api('GET', '/staff/orders').then((r) => { if (!r || r.error) { ordBox.innerHTML = '<p class="t">Не удалось загрузить заказы</p>'; return; } const ST = { paid: ['оплачен', 'ok'], claimed: ['ждёт проверки', 'wt'], new: ['создан', 'wt'], rejected: ['отклонён', 'no'] }; ordBox.innerHTML = '<h3 style="margin:18px 0 6px">История заказов <small style="font-weight:400;color:var(--muted)">· оплачено на ' + r.paidSum + ' ₽</small></h3>' + (r.orders.map((o) => { const [t, c] = ST[o.status] || [o.status, 'wt']; return '<div class="ord"><span>' + esc(o.name || o.uid) + ' · ' + (o.tier === 'ultra' ? '💎' : '⭐') + ' ' + esc(o.code) + '<br><small style="color:var(--muted)">' + new Date(o.t).toLocaleString('ru-RU') + '</small></span><b>' + o.price + ' ₽</b><b class="' + c + '">' + t + '</b></div>'; }).join('') || '<p class="t">Заказов пока нет</p>'); });
       $('#pySave').onclick = async () => { const r = await api('POST', '/staff/paycfg', { card: $('#pyCard').value, holder: $('#pyName').value }); say(r && r.ok ? (r.enabled ? 'Сохранено, оплата включена' : 'Сохранено, оплата выключена') : 'Ошибка: ' + ((r && r.error) || 'нет ответа'), !!(r && r.ok)); };
     } else if (tab === 'ann') {
       $('#stBody').innerHTML = `<p class="t">Сообщение увидят все пользователи хелпера в верхней части меню.</p><textarea class="ai-box" id="stAnn" maxlength="300" placeholder="Например: сегодня в 20:00 общий сбор в Discord"></textarea><div class="stmsg" id="stMsg"></div>
