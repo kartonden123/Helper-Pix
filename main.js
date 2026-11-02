@@ -248,7 +248,7 @@ const newer = (a, b) => { const x = vnum(a), y = vnum(b); for (let i = 0; i < 3;
 async function watchRelease() {
   if (!app.isPackaged) return;
   try {
-    const r = await fetch('https://github.com/kartonden123/Helper-Polix/releases/latest/download/latest.yml', { headers: { 'Cache-Control': 'no-cache' } });
+    const r = await fetch('https://github.com/kartonden123/Helper-Pix/releases/latest/download/latest.yml', { headers: { 'Cache-Control': 'no-cache' } });
     if (!r.ok) return;
     const m = /^version:\s*([\d.]+)/m.exec(await r.text());
     if (m && m[1] !== remoteSeen) { remoteSeen = m[1]; if (newer(m[1], app.getVersion())) checkUpdates(); }

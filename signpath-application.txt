@@ -1,9 +1,9 @@
 Заявка в SignPath Foundation (https://signpath.org/foundation). Заполняется на английском в форме на сайте.
 
 Project name: Helper Pix
-Repository: https://github.com/kartonden123/Helper-Polix
+Repository: https://github.com/kartonden123/Helper-Pix
 License: MIT
-Homepage: https://github.com/kartonden123/Helper-Polix
+Homepage: https://github.com/kartonden123/Helper-Pix
 Description: Helper Pix is a free open-source Windows overlay (Electron) that lets players of a role-play game server quickly look up in-game laws, codes and rules by pressing a hotkey. It is a reference tool only; it does not modify or inject into any game process.
 Build system: GitHub Actions (electron-builder, NSIS installer), see .github/workflows/main.yml
 Artifacts to sign: HelperPix-Setup-x.x.x.exe (NSIS installer)

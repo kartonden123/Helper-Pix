@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['2.9.1', 'Репозиторий переименован в Helper-Pix, автор Pix™'],
         ['2.9.0', 'Новая панель ролей: все роли равны, цветные точки, без перерисовки; Модератора выдаёт Ст. Модератор и выше; новые инструменты'],
         ['2.8.5', 'Покер: все комбинации до флеш-рояля, шансы победы, аутс; ДПВ — дополнительные возможности'],
         ['2.8.4', 'Обновление приходит уведомлением, окно само не открывается'],
@@ -250,7 +251,7 @@
       ['ph_theme', 'ph_acc', 'ph_accOn', 'ph_zoom', 'ph_op', 'ph_pos', 'ph_neon', 'ph_hint', 'ph_compact', 'ph_anim', 'ph_radius', 'ph_font', 'ph_limit', 'ph_searchAll', 'ph_aiRow', 'ph_hl', 'ph_quickBtns', 'ph_startTab', 'ph_escHide', 'ph_openHome'].forEach((k) => localStorage.removeItem(k));
       location.reload();
     };
-    const gh = box.querySelector('#stGh'); if (gh) gh.onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Polix/releases');
+    const gh = box.querySelector('#stGh'); if (gh) gh.onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Pix/releases');
     const uc = box.querySelector('#updChk'); if (uc) uc.onclick = async () => {
       const r = $('#updRes'); uc.disabled = true; r.textContent = 'Проверяю…';
       const res = ov.checkUpdate ? await ov.checkUpdate() : { state: 'error' };

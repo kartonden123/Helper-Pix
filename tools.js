@@ -167,7 +167,7 @@
       <button class="tl-card" data-t="clk"><b>🕒 Часы</b><span>Московское время, UTC и ночь по закону (22:00–08:00)</span></button>
     </div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
-    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, frm: openForms, pct: () => window.PHX_tools2.pct(), cnt: () => window.PHX_tools2.counter(), sw: () => window.PHX_tools2.stopwatch(), num: () => window.PHX_tools2.numbers(), rand: () => window.PHX_tools2.random(), bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
+    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, frm: openForms, pct: () => window.PHX_tools2.pct(), cnt: () => window.PHX_tools2.counter(), sw: () => window.PHX_tools2.stopwatch(), num: () => window.PHX_tools2.numbers(), rand: () => window.PHX_tools2.random(), bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Pix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
   }
 
   /* ---------- 4. Калькулятор прямо в поиске ---------- */

@@ -1,6 +1,6 @@
 {
   "name": "majestic-catalog-overlay",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Helper Pix by KATO",
   "main": "main.js",
   "author": "Pix™",
@@ -54,7 +54,7 @@
     "publish": {
       "provider": "github",
       "owner": "kartonden123",
-      "repo": "Helper-Polix",
+      "repo": "Helper-Pix",
       "releaseType": "release"
     },
     "win": {
