@@ -1,12 +1,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
-// восстановить настройки интерфейса из копии до запуска скриптов страницы
+// restore UI settings from the main-process copy before page scripts run
 try {
   const m = ipcRenderer.sendSync('ls-load') || {};
   for (const k of Object.keys(m)) if (localStorage.getItem(k) !== m[k]) localStorage.setItem(k, m[k]);
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^ph_/.test(k) && !(k in m)) ipcRenderer.send('ls-set', k, localStorage.getItem(k)); }
 } catch (e) {}
 contextBridge.exposeInMainWorld('overlay', {
-  version: '2.7.1',
+  version: '2.7.2',
   lsSet: (k, v) => ipcRenderer.send('ls-set', k, v),
   setAutohide: (on) => ipcRenderer.send('ov-autohide', !!on),
   setPref: (k, v) => ipcRenderer.invoke('set-pref', k, v),
