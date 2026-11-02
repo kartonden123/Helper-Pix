@@ -228,7 +228,6 @@ function setupUpdater() {
     if (declinedVersion === i.version) { pushUpdate({ type: 'none', version: i.version, later: true, avail: true }); return; }
     pushUpdate({ type: 'available', version: i.version });
     if (notifiedUpdate !== i.version) { notifiedUpdate = i.version; notify('Доступно обновление', 'Helper Pix ' + i.version + ' готов к скачиванию. Откройте меню (Alt+Q).', 'update'); }
-    showWin();
   });
   autoUpdater.on('update-not-available', () => { updateState = 'Установлена последняя версия'; updateTrayMenu(); });
   autoUpdater.on('download-progress', (p) => { updateState = `Скачивание: ${Math.round(p.percent)}%`; pushUpdate({ type: 'downloading', version: (lastUpdate && lastUpdate.version) || '', percent: p.percent }); updateTrayMenu(); });
@@ -237,7 +236,6 @@ function setupUpdater() {
     updateTrayMenu();
     if (autoInstall) { pushUpdate({ type: 'installing', version: i.version }); showWin(); setTimeout(installNow, 1200); return; }
     pushUpdate({ type: 'ready', version: i.version });
-    showWin();
   });  autoUpdater.on('error', (e) => { updateState = 'Ошибка обновления'; log('updater error ' + e.message); updateTrayMenu(); });
   checkUpdates();
   setInterval(checkUpdates, 10 * 60 * 1000);

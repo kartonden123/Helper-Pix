@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['2.8.4', 'Обновление приходит уведомлением, окно само не открывается'],
         ['2.8.3', 'Теперь Helper Pix: вход через сервер Helper Pix, формы и приглашение в Инструментах'],
         ['2.8.2', 'Онлайн теперь внутри строки меню'],
     ['2.8.1', 'HSP Protect: защита приложения и сервера, самопроверка в настройках'],
