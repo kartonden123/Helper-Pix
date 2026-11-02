@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.2', 'Новая карточка Premium в «О программе» со статусом и тарифами, исправлен показ версии, Администратор может выдавать Premium и роли себе'],
         ['3.1.1', 'Если версия отстаёт на 2 и больше (например 3.0.x при актуальной 3.2.0), функции блокируются до обновления'],
         ['3.1.0', 'Ультра Премиум в покупке: 20 ₽ неделя, 150 ₽ месяц, 2000 ₽ навсегда. Персонал может выдавать купленный тариф. Исправлен автозапуск с Windows. Режим «Смотреть как» для Администратора'],
         ['3.0.1', 'Купленный Premium можно снять или заменить на выданный'],
@@ -170,7 +171,12 @@
       const ver = ov.version || '';
       const tierName = S.admin ? 'Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
       return `<div class="about" style="margin-bottom:12px"><img src="logo.png" alt=""><div><b>Helper Pix <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>` +
-        card('Premium', row('Купить Premium', 'Premium от 10 ₽, Ультра Премиум от 20 ₽. Статус, срок и история покупок', btn('stBuy', '⭐ Купить Premium'))) +
+        '<div class="st-h">Premium</div><div class="st-card" style="background:linear-gradient(135deg,rgba(255,196,60,.14),rgba(196,139,255,.12));border-color:rgba(255,196,60,.35)">'
+        + '<div id="pmStat" style="margin-bottom:12px;font-size:13px;color:var(--muted)">Загрузка статуса…</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        + '<div style="padding:12px;border-radius:12px;background:rgba(0,0,0,.25)"><b>⭐ Premium</b><div style="margin:6px 0;color:var(--muted);font-size:12px;line-height:1.6">ИИ-помощник<br>Расширенные возможности</div><div style="font-size:12px"><b>10 ₽</b> неделя<br><b>99 ₽</b> месяц<br><b>1000 ₽</b> навсегда</div></div>'
+        + '<div style="padding:12px;border-radius:12px;background:rgba(0,0,0,.25)"><b>💎 Ультра Премиум</b><div style="margin:6px 0;color:var(--muted);font-size:12px;line-height:1.6">Всё из Premium<br>Больше вопросов ИИ</div><div style="font-size:12px"><b>20 ₽</b> неделя<br><b>150 ₽</b> месяц<br><b>2000 ₽</b> навсегда</div></div></div>'
+        + '<div style="margin-top:12px;display:flex;justify-content:flex-end">' + btn('stBuy', '⭐ Купить или продлить') + '</div></div>' +
         card('Обновления', row('Проверить обновления', '<span id="updRes">Новые версии приходят сами через 45 секунд после выхода</span>', btn('updChk', '🔄 Проверить')) +
         row('Все версии и изменения', 'Страница релизов на GitHub', btn('stGh', 'Открыть'))) +
         `<div class="st-h">Что нового</div><div class="st-card st-news">${NEWS.map(([v, t]) => `<div><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('')}</div>`;
@@ -259,6 +265,7 @@
       ['ph_theme', 'ph_acc', 'ph_accOn', 'ph_zoom', 'ph_op', 'ph_pos', 'ph_neon', 'ph_hint', 'ph_compact', 'ph_anim', 'ph_radius', 'ph_font', 'ph_limit', 'ph_searchAll', 'ph_aiRow', 'ph_hl', 'ph_quickBtns', 'ph_startTab', 'ph_escHide', 'ph_openHome'].forEach((k) => localStorage.removeItem(k));
       location.reload();
     };
+    const pst = box.querySelector('#pmStat'); if (pst && ov.staffApi) ov.staffApi('GET', '/pay/info').then((d) => { const p = d && d.premium; if (!p || !p.source) { pst.textContent = 'Сейчас у вас обычный доступ'; return; } const t = p.tier === 'ultra' ? '💎 Ультра Премиум' : '⭐ Premium', src = p.source === 'paid' ? 'куплен' : p.source === 'granted' ? 'выдан персоналом' : 'даёт роль', u = p.source === 'paid' ? (p.until ? ', до ' + new Date(p.until).toLocaleDateString('ru-RU') : ', навсегда') : ''; pst.innerHTML = 'Сейчас: <b style="color:var(--text)">' + t + '</b> · ' + src + u; });
     const by = box.querySelector('#stBuy'); if (by) by.onclick = () => window.PHX_tools2 && window.PHX_tools2.premium();
     const gh = box.querySelector('#stGh'); if (gh) gh.onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Pix/releases');
     const uc = box.querySelector('#updChk'); if (uc) uc.onclick = async () => {

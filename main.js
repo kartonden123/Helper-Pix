@@ -505,6 +505,7 @@ function connectWs() {
 ipcMain.handle('chat-hist', () => chatHist);
 ipcMain.handle('chat-send', (_e, text) => wsSend({ t: 'chat', text: String(text || '').slice(0, 300) }));
 ipcMain.handle('chat-del', (_e, id) => wsSend({ t: 'del', id: String(id) }));
+ipcMain.on('app-version', (e) => { e.returnValue = app.getVersion(); });
 let viewAs = ''; try { viewAs = fs.readFileSync(path.join(app.getPath('userData'), 'viewas'), 'utf8').trim(); } catch (e) {}
 ipcMain.handle('viewas-set', (_e, v) => { if (!auth.get().admin) return ''; viewAs = ['user', 'premium', 'ultra'].includes(v) ? v : ''; try { fs.writeFileSync(path.join(app.getPath('userData'), 'viewas'), viewAs); } catch (e) {} if (win && !win.isDestroyed()) win.webContents.send('me-changed'); return viewAs; });
 ipcMain.handle('auth-state', async (_e, fast) => {
