@@ -68,16 +68,24 @@
   const api = (m, p, b) => window.overlay.staffApi(m, p, b);
 
   /* ---------- В сети: видно всем ---------- */
-  async function openOnline() {
-    view = 'memo'; panel.classList.add('on');
-    list.innerHTML = backBtn() + '<div class="det"><h2>👥 В сети</h2><p class="t">Загрузка…</p></div>';
-    $('#bk').onclick = goBack; $('#cnt').textContent = '';
-    const d = await api('GET', '/online');
-    if (!d || d.error) { list.innerHTML = backBtn() + `<div class="det"><h2>👥 В сети</h2><p class="t">${esc((d && d.error) || 'Ошибка')}</p></div>`; $('#bk').onclick = goBack; return; }
-    list.innerHTML = backBtn() + `<div class="det"><h2>👥 В сети: ${d.online}</h2><p class="t">Пользователи хелпера за последние 35 минут. Всего зарегистрировано: ${d.total}.</p>
+  let onlineCache = null, onlineAt = 0;
+  async function fetchOnline() { const d = await api('GET', '/online'); if (d && !d.error) { onlineCache = d; onlineAt = Date.now(); } return d; }
+  function paintOnline(d, stale) {
+    list.innerHTML = backBtn() + `<div class="det"><h2>👥 В сети: ${d.online}${stale ? ' <small style="font-weight:400;color:var(--muted)">обновляю…</small>' : ''}</h2><p class="t">Пользователи хелпера за последние 35 минут. Всего зарегистрировано: ${d.total}.</p>
       ${d.users.map((u) => `<div class="urow"><span class="dot on"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}</span><small>v${esc(u.version || '?')}</small></div>`).join('') || '<div class="empty">Сейчас никого нет</div>'}</div>`;
     $('#bk').onclick = goBack;
   }
+  async function openOnline() {
+    view = 'memo'; panel.classList.add('on'); $('#cnt').textContent = '';
+    if (onlineCache) { paintOnline(onlineCache, Date.now() - onlineAt > 4000); if (Date.now() - onlineAt <= 4000) return; }
+    else { list.innerHTML = backBtn() + '<div class="det"><h2>👥 В сети</h2><p class="t">Загрузка…</p></div>'; $('#bk').onclick = goBack; }
+    const d = await fetchOnline();
+    if (view !== 'memo') return;
+    if (!d || d.error) { if (!onlineCache) { list.innerHTML = backBtn() + `<div class="det"><h2>👥 В сети</h2><p class="t">${esc((d && d.error) || 'Ошибка')}</p></div>`; $('#bk').onclick = goBack; } return; }
+    paintOnline(d, false);
+  }
+  setTimeout(fetchOnline, 2500);   // список готовится заранее, чтобы открывался сразу
+  if (window.overlay.onShow) window.overlay.onShow(() => { if (Date.now() - onlineAt > 15000) fetchOnline(); });
 
   /* ---------- Панель персонала ---------- */
   let cache = null, filt = '';
