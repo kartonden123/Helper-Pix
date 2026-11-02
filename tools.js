@@ -155,5 +155,5 @@
   /* ---------- кнопка в панели ---------- */
   const imm = $('#immBtn');
   if (imm && !$('#toolsBtn')) { imm.insertAdjacentHTML('beforebegin', '<button class="ib" id="toolsBtn" title="Инструменты">🧰</button>'); $('#toolsBtn').onclick = openTools; }
-  window.PHX_tools = { openTools };
+  window.PHX_tools = { openTools, openBackup, openTemplates, openChecklists, openPad };
 })();

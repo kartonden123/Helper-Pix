@@ -182,10 +182,10 @@ function search(raw){
     for(const e of ENT){
       if(CATTAB(e.d.cat)!==tab)continue;
       if(segName&&e.d.name.indexOf(segName)<0)continue;
-      if(words.every(w=>e.n.includes(w))){const c=(cnt[e.d.name]||0);if(c<3){cnt[e.d.name]=c+1;snips.push(e);if(snips.length>=14)break;}}
+      if(words.every(w=>e.n.includes(w))){const c=(cnt[e.d.name]||0);if(c<3){cnt[e.d.name]=c+1;snips.push(e);if(snips.length>=(window.PH_LIMIT>40?24:14))break;}}
     }
   }
-  return{items:items.slice(0,40).map(x=>x.a),snips,words};
+  return{items:items.slice(0,window.PH_LIMIT||40).map(x=>x.a),snips,words};
 }function row(a,i,words){
   const t=a.title||a.codeTitle||'';
   const m=a.wanted?`<span class="pill w${a.wanted>=4?' w4':''}">${stars(a.wanted)}</span><span>${a.prison?a.prison+' мес.':''}${a.record?' <span class="rec">СУДИМОСТЬ</span>':''}</span>`:(a.fine?'<span class="pill">до $'+esc(a.fine.replace(/\D/g,''))+'</span>':'');
@@ -204,6 +204,7 @@ function render(){
     return;
   }
   let r=search(v);if(r.tab&&r.tab!==doc)setDoc(r.tab);
+  if(window.PH_SEARCHALL&&!r.tab){const keep=doc;doc=keep==='law'?'rules':'law';const r2=search(v);doc=keep;r={...r,snips:r.snips.concat(r2.snips.slice(0,10))};}   // искать сразу в обеих вкладках
   if(!r.items.length&&!r.snips.length&&!r.tab){const keep=doc;doc=keep==='law'?'rules':'law';const r2=search(v);if(r2.items.length||r2.snips.length){setDoc(doc);r=r2;}else doc=keep;}   // в этой вкладке пусто, в соседней есть
   last=r;
   results=r.items;if(sel>=results.length)sel=0;
@@ -286,7 +287,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(view!=='home')goBack();
     else if(q.value){q.value='';sel=0;render();}
-    else window.overlay&&window.overlay.hide&&window.overlay.hide();
+    else if(window.PH_ESCHIDE!==false)window.overlay&&window.overlay.hide&&window.overlay.hide();
     return;
   }
   if(view==='home'&&results.length){
@@ -299,7 +300,7 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Backspace'&&view!=='home'&&document.activeElement!==q){goBack();}
 });
-if(window.overlay&&window.overlay.onShow)window.overlay.onShow(()=>{/* окно раскрывается там, где его свернули: состояние не сбрасываем */const ui=$('#ui');ui.style.animation='none';ui.offsetHeight;ui.style.animation='';q.focus();if(view==='home')q.select();requestAnimationFrame(()=>requestAnimationFrame(()=>{if(window.overlay.ready)window.overlay.ready();}));});
+if(window.overlay&&window.overlay.onShow)window.overlay.onShow(()=>{/* окно раскрывается там, где его свернули (или на главной, если так выбрано в настройках) */if(window.PH_OPENHOME){view='home';sel=0;q.value='';render();}const ui=$('#ui');ui.style.animation='none';ui.offsetHeight;ui.style.animation='';q.focus();if(view==='home')q.select();requestAnimationFrame(()=>requestAnimationFrame(()=>{if(window.overlay.ready)window.overlay.ready();}));});
 
 /* окно подгоняется под размер меню, поэтому пустого прозрачного места нет */
 document.documentElement.style.setProperty('--maxh',Math.round(screen.availHeight*0.55)+'px');
@@ -322,4 +323,5 @@ if(window.overlay&&window.overlay.resize){
 <script src="tools.js"></script>
 <script src="memo.js"></script>
 <script src="look.js"></script>
+<script src="settings.js"></script>
 </body></html>

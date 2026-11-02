@@ -18,6 +18,8 @@
   const _os = openSnip; openSnip = function (e) { enter(); return _os.apply(this, arguments); };
   const _gb = goBack; goBack = function () { exit(); return _gb.apply(this, arguments); };
   const _r = render; render = function () { if (view === 'home') exit(); return _r.apply(this, arguments); };
+  // открыли настройки, чат, памятку и т.п. поверх статьи: список слева больше не нужен
+  new MutationObserver(() => { if (split && view !== 'art') exit(); }).observe(list, { childList: true });
   res.addEventListener('click', (e) => { const t = e.target.closest('.row,.snip'); if (!t) return; mark(t); clickRows(e); });
   document.addEventListener('keydown', (e) => {
     if (!split || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;

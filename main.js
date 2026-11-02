@@ -18,6 +18,9 @@ const PREFS_FILE = path.join(app.getPath('userData'), 'ui-prefs.json');
 const readPrefs = () => { try { return JSON.parse(fs.readFileSync(PREFS_FILE, 'utf8')); } catch (e) { return {}; } };
 // размытие фона (Ультра): при открытии меню делаем снимок экрана, он размывается и подкладывается только под плашки
 let win = null;
+const winWidth = () => Math.min(1300, Math.max(700, +readPrefs().width || WIDTH));
+let hotKeys = [readPrefs().hotkey || 'Alt+Q', 'Control+Alt+Q'];
+let regKeys = () => {};
 let tray = null;
 let visible = true;
 let quitting = false;
@@ -35,37 +38,49 @@ function startDownload() {
 function pushUpdate(s) { lastUpdate = s; if (win && !win.isDestroyed()) win.webContents.send('update-state', s); }
 
 app.setAppUserModelId('dev.majestic.catalog.overlay');
-// уведомление: системное (Windows) и всплывающая плашка в самом меню
 // уведомление: своё маленькое окно поверх игры (системные уведомления Windows глушатся в полноэкранных играх и режиме «Не беспокоить»)
+// настройки: позиция (br/tr/bl/tl), длительность, звук, какие виды показывать, цвет рамки = цвет темы
 const toasts = [];
 const TOAST_ICON = { update: '⬇', role: '🛡', premium: '⭐', ban: '⛔', announce: '📢', chat: '💬', info: '🔔' };
+function layoutToasts() {
+  const p = readPrefs(); const pos = p.toastPos || 'br';
+  const wa = screen.getPrimaryDisplay().workArea; const W = 388, H = 120, step = H - 28 + 12;
+  toasts.forEach((tw, i) => {
+    if (tw.isDestroyed()) return;
+    const x = pos[1] === 'l' ? wa.x + 14 : wa.x + wa.width - W - 14;
+    const y = pos[0] === 't' ? wa.y + 6 + step * i : wa.y + wa.height - step * (i + 1) - 6;
+    tw.setBounds({ x, y, width: W, height: H });
+  });
+}
 function showToast(title, body, kind) {
   try {
-    const wa = screen.getPrimaryDisplay().workArea;
-    const W = 388, H = 120, gap = 0;
-    const y = wa.y + wa.height - (H - 28 + 12) * (toasts.length + 1) - 6;
-    const tw = new BrowserWindow({ width: W, height: H, x: wa.x + wa.width - W - 14, y, frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true, focusable: false, show: false, resizable: true, hasShadow: false, backgroundColor: '#00000000', webPreferences: { contextIsolation: true } });
+    const p = readPrefs();
+    if (p.notif && p.notif[kind || 'info'] === false) return;
+    const acc = /^#[0-9a-f]{6}$/i.test(p.accent || '') ? p.accent : '#ff4d6d';
+    const W = 388, H = 120;
+    const tw = new BrowserWindow({ width: W, height: H, x: 0, y: 0, frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true, focusable: false, show: false, resizable: true, hasShadow: false, backgroundColor: '#00000000', webPreferences: { contextIsolation: true } });
     const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const left = (p.toastPos || 'br')[1] === 'l';
+    const sound = p.toastSound ? `<script>try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.value=.06;o.connect(g);g.connect(a.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.25);o.stop(a.currentTime+.26)}catch(e){}</script>` : '';
     const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent;overflow:hidden;font:13px "Segoe UI",system-ui,sans-serif;color:#fff;user-select:none;cursor:pointer}
-.c{margin:14px;height:${H - 28}px;box-sizing:border-box;display:flex;gap:12px;align-items:center;padding:0 16px;border-radius:16px;background:linear-gradient(180deg,#221f27,#16141a);border:1px solid #ff4d6d;box-shadow:0 3px 10px rgba(0,0,0,.45);animation:in .35s cubic-bezier(.2,.9,.3,1.1) both}
+.c{margin:14px;height:${H - 28}px;box-sizing:border-box;display:flex;gap:12px;align-items:center;padding:0 16px;border-radius:16px;background:linear-gradient(180deg,#221f27,#16141a);border:1px solid ${acc};box-shadow:0 3px 10px rgba(0,0,0,.45);animation:in .35s cubic-bezier(.2,.9,.3,1.1) both}
 i{font-style:normal;font-size:26px}b{display:block;font-size:14px;margin-bottom:2px}span{color:#cfc8d3;font-size:12px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-@keyframes in{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}</style>
-<div class="c" onclick="document.title='click'"><i>${TOAST_ICON[kind] || TOAST_ICON.info}</i><div><b>${esc(title)}</b><span>${esc(body)}</span></div></div>`;
+@keyframes in{from{opacity:0;transform:translateX(${left ? -40 : 40}px)}to{opacity:1;transform:none}}</style>
+<div class="c" onclick="document.title='click'"><i>${TOAST_ICON[kind] || TOAST_ICON.info}</i><div><b>${esc(title)}</b><span>${esc(body)}</span></div></div>${sound}`;
     tw.setAlwaysOnTop(true, 'screen-saver');
     tw.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
     tw.once('ready-to-show', () => tw.showInactive());
     tw.webContents.on('page-title-updated', (_e, t) => { if (t === 'click') { showWin(); if (!tw.isDestroyed()) tw.close(); } });
-    toasts.push(tw);
-    const done = () => { const i = toasts.indexOf(tw); if (i >= 0) toasts.splice(i, 1); };
-    tw.on('closed', done);
-    setTimeout(() => { if (!tw.isDestroyed()) tw.close(); }, 8000);
+    toasts.push(tw); layoutToasts();
+    tw.on('closed', () => { const i = toasts.indexOf(tw); if (i >= 0) toasts.splice(i, 1); layoutToasts(); });
+    setTimeout(() => { if (!tw.isDestroyed()) tw.close(); }, Math.min(20, Math.max(3, +p.toastSec || 8)) * 1000);
   } catch (e) { log('toast error ' + e.message); }
 }
 function notify(title, body, kind) {
   showToast(title, body, kind);
   if (win && !win.isDestroyed()) win.webContents.send('notice', { title, body, kind: kind || 'info', silent: true });
 }
-ipcMain.handle('notify-test', () => { notify('Проверка уведомлений', 'Если вы видите это окно, уведомления работают.', 'info'); return true; });let notifiedUpdate = null;
+ipcMain.handle('notify-test', () => { showToast('Проверка уведомлений', 'Если вы видите это окно, уведомления работают.', 'info'); return true; });let notifiedUpdate = null;
 // один экземпляр: второй запуск просто показывает окно
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 app.on('second-instance', () => showWin());
@@ -82,7 +97,7 @@ function placeWindow() {
     const w = Math.round(workArea.width * 0.6), h = 150;
     return { x: workArea.x + Math.round((workArea.width - w) / 2), y: workArea.y + 12, width: w, height: h };
   }
-  const h = Math.round(workArea.height * HEIGHT_RATIO), w = WIDTH;
+  const h = Math.round(workArea.height * HEIGHT_RATIO), w = winWidth();
   return {
     x: workArea.x + Math.round((workArea.width - w) / 2),
     y: workArea.y + Math.round(workArea.height * 0.12),
@@ -235,7 +250,7 @@ function updateTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: visible ? 'Скрыть' : 'Показать', click: toggle },
-    { label: `Горячая клавиша: Alt+Q`, enabled: false },
+    { label: 'Горячая клавиша: ' + hotKeys[0], enabled: false },
     { label: updateState, enabled: false },
     ...(lastUpdate && lastUpdate.later && lastUpdate.avail ? [{ label: 'Скачать обновление ' + lastUpdate.version, click: () => startDownload() }] : []),
     ...(lastUpdate && lastUpdate.later && !lastUpdate.avail ? [{ label: 'Установить обновление ' + lastUpdate.version, click: () => installNow() }] : []),
@@ -260,14 +275,14 @@ ipcMain.handle('ai-ask', async (_e, question, context) => {
   if (!t || !auth.get().ok) return { error: 'auth', message: 'Войдите через Discord, чтобы пользоваться ИИ.' };
   try {
     const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 45000);
-    const r = await fetch(STATS_URL + '/ai', { method: 'POST', signal: ctl.signal, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context }) });
+    const r = await sfetch(STATS_URL + '/ai', { method: 'POST', signal: ctl.signal, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context }) });
     clearTimeout(to);
     return await r.json();
   } catch (e) { log('ai error ' + e.message); return { error: 'net', message: 'Нет связи с сервером ИИ. Вопрос не списан.' }; }
 });
 ipcMain.handle('ai-left', async () => {
   const t = auth.token(); if (!t || !auth.get().ok) return null;
-  try { const r = await fetch(STATS_URL + '/ai/left', { headers: { Authorization: 'Bearer ' + t } }); return await r.json(); } catch (e) { return null; }
+  try { const r = await sfetch(STATS_URL + '/ai/left', { headers: { Authorization: 'Bearer ' + t } }); return await r.json(); } catch (e) { return null; }
 });
 ipcMain.handle('update-state', () => lastUpdate);
 // ручная проверка из настроек
@@ -319,7 +334,27 @@ ipcMain.on('ov-blur', (_e, on) => {
   applyProtection();
   if (win && !win.isDestroyed()) win.webContents.send('snap-changed', !!on);
 });
-ipcMain.handle('snap-info', () => snapInfo());ipcMain.handle('ui-prefs', () => ({ snap: snapOn(), autohide: !!readPrefs().autohide }));
+ipcMain.handle('snap-info', () => snapInfo());
+// настройки, которые применяет основной процесс
+const PREF_KEYS = ['hotkey', 'width', 'toastPos', 'toastSec', 'toastSound', 'notif', 'accent'];
+ipcMain.handle('set-pref', (_e, key, value) => {
+  if (!PREF_KEYS.includes(key)) return { ok: false };
+  if (key === 'hotkey') {
+    const acc = String(value || '');
+    if (!/^(Alt|Control|Shift|CommandOrControl)(\+(Alt|Control|Shift))?\+([A-Z0-9`]|F([1-9]|1[0-2])|Space)$|^F([1-9]|1[0-2])$/.test(acc)) return { ok: false, error: 'Недопустимая клавиша' };
+    hotKeys.forEach((k) => { try { globalShortcut.unregister(k); } catch (e) {} });
+    let ok = false; try { ok = globalShortcut.register(acc, toggle); } catch (e) {}
+    if (!ok) { hotKeys = [readPrefs().hotkey || 'Alt+Q', 'Control+Alt+Q']; regKeys(); return { ok: false, error: 'Эту комбинацию уже заняла другая программа' }; }
+    hotKeys = [acc, 'Control+Alt+Q']; regKeys(); updateTrayMenu();
+  }
+  if (key === 'width') {
+    value = Math.min(1300, Math.max(700, +value || WIDTH));
+    if (win && !win.isDestroyed()) { const b = win.getBounds(); win.setBounds({ x: Math.round(b.x + (b.width - value) / 2), y: b.y, width: value, height: b.height }); }
+  }
+  try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), [key]: value })); } catch (e) {}
+  return { ok: true, value };
+});
+ipcMain.on('open-url', (_e, u) => { if (/^https:\/\/github\.com\/kartonden123\//.test(String(u))) require('electron').shell.openExternal(String(u)); });ipcMain.handle('ui-prefs', () => { const p = readPrefs(); return { snap: snapOn(), autohide: !!p.autohide, hotkey: hotKeys[0], width: winWidth(), toastPos: p.toastPos || 'br', toastSec: +p.toastSec || 8, toastSound: !!p.toastSound, notif: p.notif || {} }; });
 ipcMain.on('ov-autohide', (_e, on) => { try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), autohide: !!on })); } catch (e) {} });
 ipcMain.on('ov-opacity', (_e, v) => { if (win && v >= 0.3 && v <= 1) win.setOpacity(v); });
 ipcMain.on('ov-position', (_e, side) => {
@@ -358,7 +393,7 @@ async function refreshMe() {
   const t = auth.token();
   if (!t || !auth.get().ok) { if (!auth.get().ok) me = { roles: [], premium: false, tier: '', role: '', banned: false, announce: null }; return; }
   try {
-    const r = await fetch(STATS_URL + '/me', { headers: { Authorization: 'Bearer ' + t } });
+    const r = await sfetch(STATS_URL + '/me', { headers: { Authorization: 'Bearer ' + t } });
     if (r.ok) {
       const d = await r.json();
       if (Date.now() - lastPushAt < 90000) return;   // свежие данные из мгновенного канала важнее задержанного ответа KV
@@ -407,7 +442,7 @@ function connectWs() {
   });
   const again = () => { clearInterval(wsPing); ws = null; wsTimer = setTimeout(connectWs, wsDelay); wsDelay = Math.min(60000, wsDelay * 2); };
   ws.on('close', again);
-  ws.on('error', (e) => { log('ws error ' + e.message); });
+  ws.on('error', (e) => { log('ws error ' + e.message); if (/401/.test(e.message)) tokenRefresh(); });
 }
 ipcMain.handle('chat-hist', () => chatHist);
 ipcMain.handle('chat-send', (_e, text) => wsSend({ t: 'chat', text: String(text || '').slice(0, 300) }));
@@ -424,16 +459,18 @@ ipcMain.handle('staff-api', async (_e, method, apiPath, body) => {
   if (!t || !auth.get().ok) return { error: 'Войдите через Discord' };
   if (!/^\/(staff\/[a-z]+|online)(\?id=\d{5,25})?$/.test(apiPath)) return { error: 'bad path' };
   try {
-    const r = await fetch(STATS_URL + apiPath, { method: method === 'POST' ? 'POST' : 'GET', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: method === 'POST' ? JSON.stringify(body || {}) : undefined });
+    const r = await sfetch(STATS_URL + apiPath, { method: method === 'POST' ? 'POST' : 'GET', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: method === 'POST' ? JSON.stringify(body || {}) : undefined });
     const d = await r.json();
     if (!r.ok && !d.error) d.error = 'Ошибка ' + r.status;
+    if (d.error === 'bad token') d.error = 'Сессия Discord обновляется, повторите через пару секунд';
+    if (d.error === 'discord busy') d.error = 'Discord сейчас перегружен, повторите позже';
     return d;
   } catch (e) { return { error: 'Нет связи с сервером' }; }
 });ipcMain.handle('admin-premium', async (_e, id, on) => {
   const t = auth.token();
   if (!t || !auth.get().admin) return { error: 'forbidden' };
   try {
-    const r = await fetch(STATS_URL + '/admin/premium', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, on: !!on }) });
+    const r = await sfetch(STATS_URL + '/admin/premium', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, on: !!on }) });
     return await r.json();
   } catch (e) { return { error: 'Нет связи с сервером' }; }
 });
@@ -442,7 +479,7 @@ async function ping() {
   const t = auth.token();
   if (!t || !auth.get().ok || false) return;
   try {
-    await fetch(STATS_URL + '/ping', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ version: app.getVersion() }) });
+    await sfetch(STATS_URL + '/ping', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ version: app.getVersion() }) });
   } catch (e) { log('ping error ' + e.message); }
 }
 // админ-панель: сервер сам проверяет, что это ваш Discord ID
@@ -450,7 +487,7 @@ ipcMain.handle('admin-users', async () => {
   const t = auth.token();
   if (!t || !auth.get().admin) return { error: 'forbidden' };
   try {
-    const r = await fetch(STATS_URL + '/admin/users', { headers: { Authorization: 'Bearer ' + t } });
+    const r = await sfetch(STATS_URL + '/admin/users', { headers: { Authorization: 'Bearer ' + t } });
     return await r.json();
   } catch (e) { return { error: 'Нет связи с сервером статистики' }; }
 });
@@ -461,6 +498,31 @@ ipcMain.handle('auth-login', async () => {
   showWin();
   return s;
 });
+// ---------- токен Discord: обновляем сами, как только сервер сказал «401» ----------
+let refreshing = null, lastRefresh = 0;
+function tokenRefresh(force) {
+  if (refreshing) return refreshing;
+  if (!force && Date.now() - lastRefresh < 20000) return Promise.resolve(auth.get());
+  lastRefresh = Date.now();
+  const was = auth.get().ok;
+  refreshing = auth.recheck().then((s) => {
+    log('auth refresh: ' + s.ok + ' token:' + !!auth.token() + ' ' + (s.reason || ''));
+    if (was !== s.ok) { loadContent(); if (!s.ok) showWin(); }
+    if (s.ok && auth.token()) connectWs();
+    return s;
+  }).catch((e) => { log('auth refresh error ' + e.message); return auth.get(); }).finally(() => { refreshing = null; });
+  return refreshing;
+}
+// запрос к серверу хелпера: при 401 (токен устарел) обновляем токен и повторяем один раз
+async function sfetch(url, init = {}) {
+  let r = await fetch(url, init);
+  if (r.status === 401 && init.headers && init.headers.Authorization) {
+    await tokenRefresh(Date.now() - lastRefresh > 5000);
+    const t = auth.token(); if (!t) return r;
+    r = await fetch(url, { ...init, headers: { ...init.headers, Authorization: 'Bearer ' + t } });
+  }
+  return r;
+}
 async function recheckAuth() {
   const was = auth.get().ok;
   const s = await auth.recheck();
@@ -476,13 +538,15 @@ app.whenReady().then(async () => {
   ping();
   setInterval(ping, 20 * 60 * 1000);
   setTimeout(refreshMe, 20000);
+  // после сна или потери сети: токен мог устареть, обновляем; в режиме «без связи» пробуем получить токен раз в минуту
+  setInterval(() => { if (auth.get().ok && !auth.token()) tokenRefresh(true); }, 60000);
+  try { require('electron').powerMonitor.on('resume', () => setTimeout(() => { tokenRefresh(true); checkUpdates(); }, 6000)); } catch (e) {}
   connectWs(); setInterval(connectWs, 15000);
   setInterval(refreshMe, 3 * 60 * 1000);
   createTray();
   if (app.isPackaged && !fs.existsSync(AUTOSTART_FLAG())) { setAutostart(true); try { fs.writeFileSync(AUTOSTART_FLAG(), '1'); } catch (e) {} }
   setupUpdater();
-  const keys = [TOGGLE_KEY, 'Control+Alt+Q'];
-  const regKeys = () => keys.forEach(k => {
+  regKeys = () => [...new Set(hotKeys)].forEach(k => {
     if (globalShortcut.isRegistered(k)) return;
     const ok = globalShortcut.register(k, toggle);
     if (ok) log(`shortcut ${k}: true`);

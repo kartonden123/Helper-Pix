@@ -1,7 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('overlay', {
-  version: '2.6.2',
+  version: '2.7.0',
   setAutohide: (on) => ipcRenderer.send('ov-autohide', !!on),
+  setPref: (k, v) => ipcRenderer.invoke('set-pref', k, v),
+  openUrl: (u) => ipcRenderer.send('open-url', u),
   uiPrefs: () => ipcRenderer.invoke('ui-prefs'),
   snapInfo: () => ipcRenderer.invoke('snap-info'),
   onSnapChanged: (cb) => ipcRenderer.on('snap-changed', (_e, on) => cb(on)),
