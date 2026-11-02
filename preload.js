@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('overlay', {
   onChat: (cb) => ipcRenderer.on('chat', (_e, m) => cb(m)),
   pokerShot: () => ipcRenderer.invoke('poker-shot'),
   ready: () => ipcRenderer.send('ov-ready'),
+  viewAsSet: (v) => ipcRenderer.invoke('viewas-set', String(v || '')),
   autostartGet: () => ipcRenderer.invoke('autostart-get'),
   autostartSet: (on) => ipcRenderer.invoke('autostart-set', !!on),
   setBlur: (on) => ipcRenderer.send('ov-blur', !!on),

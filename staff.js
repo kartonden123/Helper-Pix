@@ -93,8 +93,10 @@
   // единый список ролей: штатные и особые равноправны, у человека может быть любой набор
   const STAFF_ROLES = [['mod', 'Модератор'], ['smod', 'Ст. Модератор'], ['jr', 'Мл. Администратор'], ['admin', 'Зам. Администратор']];
   const canGrant = (k, u) => {
+    const isSp = SP.some((x) => x[0] === k);
+    if (S.role === 'owner' && isSp) return true;   // Администратор меняет особые роли кому угодно, в том числе себе
     if (u.role === 'owner' || u.id === (S.id || '')) return false;
-    if (SP.some((x) => x[0] === k)) return S.role === 'owner' || rank(S.role) >= 3;
+    if (isSp) return S.role === 'owner' || rank(S.role) >= 3;
     if (S.role === 'owner') return true;
     return rank(S.role) > RK[k] && rank(u.role) < rank(S.role);
   };
@@ -107,7 +109,7 @@
     const mine = rank(S.role);
     const staff = u.role !== '';
     const isPaid = u.premSource === 'paid', paidLeft = isPaid ? (u.premUntil ? 'до ' + new Date(u.premUntil).toLocaleDateString('ru-RU') : 'навсегда') : '';
-    const premBtn = mine >= 3 && !staff && !(isPaid && mine < 4) ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}">${isPaid ? `<option value="paid" selected>🧾 Куплен ${paidLeft}</option>` : ''}<option value="0"${!isPaid && tierOf(u) === '' ? ' selected' : ''}>${isPaid ? '✖ Снять купленный' : 'Без Premium'}</option><option value="1"${!isPaid && tierOf(u) === 'premium' ? ' selected' : ''}>${isPaid ? '⭐ Заменить на выданный' : '⭐ Premium'}</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
+    const premBtn = mine >= 3 && !staff && !(isPaid && mine < 4) ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}">${isPaid ? `<option value="paid" selected>🧾 Куплен ${paidLeft}</option>` : ''}<option value="0"${!isPaid && tierOf(u) === '' ? ' selected' : ''}>${isPaid ? '✖ Снять купленный' : 'Без Premium'}</option><option value="1"${!isPaid && tierOf(u) === 'premium' ? ' selected' : ''}>${isPaid ? '⭐ Заменить на выданный' : '⭐ Premium'}</option>${mine >= 4 ? `<option value="2"${!isPaid && tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option><optgroup label="Выдать как купленный"><option value="pay:week">🧾 Premium · неделя</option><option value="pay:month">🧾 Premium · месяц</option><option value="pay:forever">🧾 Premium · навсегда</option><option value="pay:uweek">🧾 Ультра · неделя</option><option value="pay:umonth">🧾 Ультра · месяц</option><option value="pay:uforever">🧾 Ультра · навсегда</option></optgroup>` : ''}</select>` : '';
     const roleSel = '';
     const dpvBtn = mine >= 2 && u.role !== 'owner' ? `<button class="mini" data-a="rp" data-id="${esc(u.id)}">🎭 Роли</button><button class="mini" data-a="hist" data-id="${esc(u.id)}" title="История ролей и Premium">🕘</button>` : '';
     const banBtn = mine >= 4 && canEdit(u) ? `<button class="mini${u.banned ? ' bad' : ''}" data-a="ban" data-id="${esc(u.id)}">${u.banned ? '✔ разблок.' : '🚫 блок'}</button>` : '';
@@ -116,14 +118,14 @@
 
   async function act(kind, id, extra) {
     let path, body;
-    if (kind === 'prem') { path = '/staff/premium'; body = { id, tier: extra }; }
+    if (kind === 'prem') { path = '/staff/premium'; body = typeof extra === 'string' ? { id, paid: extra.slice(4) } : { id, tier: extra }; }
     else if (kind === 'role') { path = '/staff/role'; body = { id, role: extra }; }
     else if (kind === 'sp') { path = '/staff/role'; body = { id, role: extra.role, on: extra.on }; }
     else { path = '/staff/ban'; body = { id, on: extra }; }
     say('Отправляю…', true);
     const r = await api('POST', path, body);
     if (!r || r.error) { say('Ошибка: ' + ((r && r.error) || 'нет ответа от сервера'), false); return null; }
-    say(kind === 'prem' ? (r.tier === 'ultra' ? 'Ультра Премиум выдан: ' : r.premium ? 'Premium выдан: ' : 'Premium снят: ') + id : kind === 'sp' ? 'Роль «' + (RN[extra.role] || extra.role) + (extra.on ? '» выдана: ' : '» снята: ') + id : kind === 'role' ? (r.role ? 'Роль «' + RN[r.role] + '» назначена: ' : 'Роль снята: ') + id : (r.banned ? 'Заблокирован: ' : 'Разблокирован: ') + id, true);
+    say(kind === 'prem' ? (r.premSource === 'paid' ? 'Выдан купленный ' + (r.tier === 'ultra' ? 'Ультра Премиум: ' : 'Premium: ') : r.tier === 'ultra' ? 'Ультра Премиум выдан: ' : r.premium ? 'Premium выдан: ' : 'Premium снят: ') + id : kind === 'sp' ? 'Роль «' + (RN[extra.role] || extra.role) + (extra.on ? '» выдана: ' : '» снята: ') + id : kind === 'role' ? (r.role ? 'Роль «' + RN[r.role] + '» назначена: ' : 'Роль снята: ') + id : (r.banned ? 'Заблокирован: ' : 'Разблокирован: ') + id, true);
     // сразу обновляем строку локально: список на сервере обновляется с задержкой до минуты
     if (cache) {
       const u = cache.users.find((x) => x.id === id);
@@ -163,7 +165,7 @@
     else if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
     else if (a === 'role') el.onchange = async () => { await act('role', id, el.value); refreshRow(id); };
     else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); refreshRow(id); };
-    else if (a === 'tier') el.onchange = async () => { if (el.value === 'paid') return; const u = cache.users.find((x) => x.id === id); if (u && u.premSource === 'paid' && !confirm(el.value === '0' ? 'Снять купленный Premium? Деньги не возвращаются автоматически.' : 'Заменить купленный Premium на выданный вручную? Срок покупки пропадёт.')) { refreshRow(id); return; } await act('prem', id, +el.value); refreshRow(id); };
+    else if (a === 'tier') el.onchange = async () => { if (el.value === 'paid') return; const u = cache.users.find((x) => x.id === id); if (el.value.startsWith('pay:')) { if (!confirm('Выдать купленный тариф без оплаты? Он будет отмечен как купленный.')) { refreshRow(id); return; } await act('prem', id, el.value); refreshRow(id); return; } if (u && u.premSource === 'paid' && !confirm(el.value === '0' ? 'Снять купленный Premium? Деньги не возвращаются автоматически.' : 'Заменить купленный Premium на выданный вручную? Срок покупки пропадёт.')) { refreshRow(id); return; } await act('prem', id, +el.value); refreshRow(id); };
     else el.onclick = async () => { const u = cache.users.find((x) => x.id === id); if (!u) return; await act(a, id, !u.banned); refreshRow(id); };
   }
   function bindUsers() {

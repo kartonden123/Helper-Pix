@@ -82,7 +82,7 @@
 
 
   // ---------- Покупка Premium ----------
-  const PLAN_ORDER = ['week', 'month', 'forever'];
+  const PLAN_ORDER = ['week', 'month', 'forever'], ULTRA_ORDER = ['uweek', 'umonth', 'uforever'];
   const dateRu = (ms) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   const SRC = { paid: ['куплен', '#ffc43c'], granted: ['выдан персоналом', '#7cf0c9'], role: ['даёт роль', '#c48bff'] };
   function premLine(p) {
@@ -99,16 +99,18 @@
       const d = await api('GET', '/pay/info'); const box = $('#pmBox'); if (!box && !$('.det')) return;
       if (!d || d.error) { $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">' + eh((d && d.error) || 'Ошибка') + '</p>'; return; }
       const o = d.order, hist = (d.history || []).slice(0, 8);
-      const plans = PLAN_ORDER.map((k) => { const p = d.plans[k]; return '<button class="tl-card pm-plan' + (sel === k ? ' sel' : '') + '" data-p="' + k + '" style="text-align:center;flex:1;min-width:110px"><b style="font-size:20px">' + p.price + ' ₽</b><span>' + p.n + '</span></button>'; }).join('');
+      const mk = (k) => { const p = d.plans[k]; return '<button class="tl-card pm-plan' + (sel === k ? ' sel' : '') + '" data-p="' + k + '" style="text-align:center;flex:1;min-width:110px"><b style="font-size:20px">' + p.price + ' ₽</b><span>' + p.n + '</span></button>'; };
+      const plans = '<h3 style="margin:10px 0 6px">⭐ Premium</h3><div style="display:flex;gap:8px;flex-wrap:wrap">' + PLAN_ORDER.map(mk).join('') + '</div><h3 style="margin:14px 0 6px">💎 Ультра Премиум <small style="font-weight:400;color:var(--muted)">· больше вопросов ИИ и все возможности Premium</small></h3><div style="display:flex;gap:8px;flex-wrap:wrap">' + ULTRA_ORDER.map(mk).join('') + '</div>';
+      const pn = (k) => (d.plans[k] && d.plans[k].tier === 'ultra' ? 'Ультра ' : 'Premium ') + (d.plans[k] ? d.plans[k].n : '');
       let order = '';
-      if (o && o.status === 'new' && d.auto && o.url) order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>Оплатить можно через СБП, картой Мир, Visa или Mastercard. После оплаты Premium включится сам.</div><div class="actions"><button class="abtn on" id="pmPay">Перейти к оплате</button><button class="abtn" id="pmCheck">Проверить оплату</button></div>';
-      else if (o && o.status === 'new') order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>1. Переведите <b>' + o.price + ' ₽</b> на карту <b>' + eh(d.card) + '</b>' + (d.holder ? ' (' + eh(d.holder) + ')' : '') + '<br>2. В комментарии к переводу укажите код <b>' + eh(o.code) + '</b><br>3. Нажмите «Я оплатил». Персонал проверит перевод и выдаст Premium.</div><div class="actions"><button class="abtn" id="pmCopy">📋 Копировать карту</button><button class="abtn on" id="pmClaim">Я оплатил</button></div>';
+      if (o && o.status === 'new' && d.auto && o.url) order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(pn(o.plan)) + ', <b>' + o.price + ' ₽</b><br>Оплатить можно через СБП, картой Мир, Visa или Mastercard. После оплаты Premium включится сам.</div><div class="actions"><button class="abtn on" id="pmPay">Перейти к оплате</button><button class="abtn" id="pmCheck">Проверить оплату</button></div>';
+      else if (o && o.status === 'new') order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(pn(o.plan)) + ', <b>' + o.price + ' ₽</b><br>1. Переведите <b>' + o.price + ' ₽</b> на карту <b>' + eh(d.card) + '</b>' + (d.holder ? ' (' + eh(d.holder) + ')' : '') + '<br>2. В комментарии к переводу укажите код <b>' + eh(o.code) + '</b><br>3. Нажмите «Я оплатил». Персонал проверит перевод и выдаст Premium.</div><div class="actions"><button class="abtn" id="pmCopy">📋 Копировать карту</button><button class="abtn on" id="pmClaim">Я оплатил</button></div>';
       else if (o && o.status === 'claimed') order = '<div class="note" style="margin-top:12px">⏳ Заказ <b>' + eh(o.code) + '</b> ждёт проверки персоналом. Обычно это недолго. Premium появится сам.</div>';
       else if (o && o.status === 'rejected') order = '<div class="note" style="margin-top:12px;border-color:rgba(255,100,100,.5)">❌ Оплата заказа ' + eh(o.code) + ' отклонена' + (o.reason ? ': ' + eh(o.reason) : '') + '</div>';
       else if (o && o.status === 'paid') order = '<div class="note" style="margin-top:12px;border-color:rgba(61,220,132,.5)">✅ Оплата подтверждена, спасибо!</div>';
       const canBuy = d.enabled && !(o && (o.status === 'claimed' || (o.status === 'new' && !d.auto)));
       $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">Ваш статус: ' + premLine(d.premium) + '</p>'
-        + '<p class="t">Premium даёт ИИ-помощника и расширенные возможности. Выберите срок:</p><div style="display:flex;gap:8px;flex-wrap:wrap">' + plans + '</div>'
+        + '<p class="t">Premium даёт ИИ-помощника и расширенные возможности. Выберите тариф и срок:</p>' + plans
         + (d.enabled ? (canBuy ? '<div class="actions">' + '<button class="abtn on" id="pmBuy">' + (d.auto ? 'Оплатить ' : 'Перевод на карту ') + d.plans[sel].price + ' ₽</button></div>' : '') : '<p class="t">Приём оплаты пока не включён администратором.</p>')
         + order
         + (hist.length ? '<h3 style="margin:16px 0 6px">История</h3>' + hist.map((h) => '<div class="urow" style="grid-template-columns:1fr auto"><span>' + eh(h.text) + '</span><small>' + new Date(h.t).toLocaleDateString('ru-RU') + '</small></div>').join('') : '');

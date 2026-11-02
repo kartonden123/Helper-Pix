@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.0', 'Ультра Премиум в покупке: 20 ₽ неделя, 150 ₽ месяц, 2000 ₽ навсегда. Персонал может выдавать купленный тариф. Исправлен автозапуск с Windows. Режим «Смотреть как» для Администратора'],
         ['3.0.1', 'Купленный Premium можно снять или заменить на выданный'],
         ['3.0.0', 'Покупка Premium: перевод на карту с подтверждением персонала в Discord, готов приём через ЮKassa'],
         ['2.10.0', 'Покупка Premium (10 ₽ неделя, 99 ₽ месяц, 1000 ₽ навсегда), история ролей и Premium, отметка «куплен / выдан»'],
@@ -104,7 +105,7 @@
 
   function section(id) {
     const prem = !!S.premium, ultra = !!S.ultra;
-    if (id === 'gen') return card('Запуск и поведение',
+    if (id === 'gen') return '<div id="stViewBox"></div>' + card('Запуск и поведение',
       row('Автозапуск с Windows', 'Хелпер стартует вместе с ПК и ждёт в трее', tg('autostart', false)) +
       row('Скрывать при клике мимо меню', 'Удобно в игре: кликнул в игру, и меню спряталось', tg('autohide', LS.get('ph_autohide', false))) +
       row('Esc на главной скрывает меню', 'Иначе меню закрывается только горячей клавишей', tg('escHide', LS.get('ph_escHide', true) !== false)) +
@@ -168,7 +169,7 @@
       const ver = ov.version || '';
       const tierName = S.admin ? 'Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
       return `<div class="about" style="margin-bottom:12px"><img src="logo.png" alt=""><div><b>Helper Pix <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>` +
-        card('Premium', row('Купить Premium', 'Неделя 10 ₽, месяц 99 ₽, навсегда 1000 ₽. Статус, срок и история покупок', btn('stBuy', '⭐ Купить Premium'))) +
+        card('Premium', row('Купить Premium', 'Premium от 10 ₽, Ультра Премиум от 20 ₽. Статус, срок и история покупок', btn('stBuy', '⭐ Купить Premium'))) +
         card('Обновления', row('Проверить обновления', '<span id="updRes">Новые версии приходят сами через 45 секунд после выхода</span>', btn('updChk', '🔄 Проверить')) +
         row('Все версии и изменения', 'Страница релизов на GitHub', btn('stGh', 'Открыть'))) +
         `<div class="st-h">Что нового</div><div class="st-card st-news">${NEWS.map(([v, t]) => `<div><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('')}</div>`;
@@ -225,6 +226,7 @@
     }));
     box.querySelectorAll('[data-rg]').forEach((el) => (el.oninput = () => { const k = el.dataset.rg; const v = box.querySelector(`[data-rv="${k}"]`); if (v) v.textContent = el.value + (k === 'radius' ? 'px' : '%'); if (RG[k]) RG[k](el.value); }));
     const acc = box.querySelector('#stAcc'); if (acc) acc.oninput = () => { LS.set('ph_acc', acc.value); if (LS.get('ph_accOn', false)) { X.applyTheme(); syncAccent(); } };
+    const vb = box.querySelector('#stViewBox'); if (vb && ov.authState && ov.viewAsSet) ov.authState(true).then((a) => { if (!a || !a.realAdmin) return; vb.innerHTML = card('Режим просмотра (только для тебя)', row('Смотреть как', 'Меняет только вид в приложении, чтобы проверить, что видят другие. Права на сервере остаются твоими', '<select class="mini" id="stViewAs"><option value="">Я сам (Администратор)</option><option value="user">Обычный пользователь</option><option value="premium">Premium</option><option value="ultra">Ультра Премиум</option></select>')); const sel = vb.querySelector('#stViewAs'); sel.value = a.viewAs || ''; sel.onchange = () => ov.viewAsSet(sel.value).then(() => { if (window.location) setTimeout(() => location.reload(), 150); }); });
     const at = box.querySelector('[data-tg="autostart"]'); if (at && ov.autostartGet) ov.autostartGet().then((on) => { at.checked = !!on; });
     const clrQ = box.querySelector('#stClrQ'); if (clrQ) clrQ.onclick = () => { LS.set('ph_q', []); clrQ.textContent = '✔ Очищено'; };
     const hb = box.querySelector('#hspBox');
