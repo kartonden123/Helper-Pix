@@ -362,7 +362,7 @@ const AUTOSTART_FLAG = () => path.join(app.getPath('userData'), 'autostart-init'
 function setAutostart(on) { if (!app.isPackaged) return; try { app.setLoginItemSettings({ openAtLogin: !!on, args: ['--hidden'] }); } catch (e) { log('autostart error ' + e.message); } }
 ipcMain.handle('autostart-get', () => (app.isPackaged ? app.getLoginItemSettings().openAtLogin : false));
 ipcMain.handle('autostart-set', (_e, on) => { setAutostart(on); return app.isPackaged ? app.getLoginItemSettings().openAtLogin : false; });
-// снимок экрана для режима покера (только Главный Администратор и роль ДПВ); файл остаётся у пользователя на компьютере
+// снимок экрана для режима покера (только Администратор и роль ДПВ); файл остаётся у пользователя на компьютере
 ipcMain.handle('poker-shot', async () => {
   if (!(auth.get().admin || (me.roles || []).includes('dpv'))) return { error: 'forbidden' };
   try {
@@ -419,7 +419,7 @@ const PREMIUM_FILE = () => path.join(app.getPath('userData'), 'premium.json');
 let me = { roles: [], premium: false, tier: '', role: '', banned: false, announce: null };
 try { me = { ...me, ...JSON.parse(fs.readFileSync(PREMIUM_FILE(), 'utf8')) }; } catch (e) {}
 let meKnown = (() => { try { const j = JSON.parse(fs.readFileSync(PREMIUM_FILE(), 'utf8')); return Array.isArray(j.roles) && j.tier !== undefined; } catch (e) { return false; } })();
-const RN_RU = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
+const RN_RU = { owner: 'Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
 const SPECIAL_RU = [['dpv', 'ДПВ', 'Открыты дополнительные возможности (в том числе кнопка ♠).'], ['tester', 'Тестер', 'Выдан Premium и ранний доступ к новым функциям.'], ['curator', 'Куратор', 'Роль отображается в списке «В сети».'], ['helper', 'Хелпер', 'Роль отображается в списке «В сети».'], ['media', 'Медиа', 'Роль отображается в списке «В сети».'], ['partner', 'Партнёр', 'Выдан Premium.'], ['vip', 'VIP', 'Выдан Premium.'], ['dev', 'Разработчик', 'Выдан Premium.'], ['legend', 'Легенда', 'Выдан Premium.'], ['event', 'Ивент-мейкер', 'Роль отображается в списке «В сети».'], ['support', 'Поддержка', 'Роль отображается в списке «В сети».']];
 function diffMe(a, b, isOwner) {
   if (isOwner) { if (b.announce && (!a.announce || a.announce.id !== b.announce.id)) { /* свои объявления не показываем */ } return; }

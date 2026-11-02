@@ -169,7 +169,7 @@
     view = 'memo'; panel.classList.add('on');
     const cur = LS.get('ph_theme', 'scarlet'), zoom = LS.get('ph_zoom', 100), op = LS.get('ph_op', 100), neon = !!LS.get('ph_neon', false), blurOn = !!LS.get('ph_snap', false), acc = LS.get('ph_acc', '#ff4d6d');
     const ver = (window.overlay && window.overlay.version) || '';
-    const tierName = S.admin ? 'Главный Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
+    const tierName = S.admin ? 'Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
     const lock = (t) => `<div class="set-row lockrow">🔒 ${t}</div>`;
     const premBlock = S.premium ? `
       <div class="set-sec">⭐ Premium</div>

@@ -3,7 +3,7 @@
   const S = window.PH, X = window.PHX;
   if (!S || !X || !(window.overlay && window.overlay.onChat)) return;
   const $ = (s) => document.querySelector(s);
-  const RN = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
+  const RN = { owner: 'Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
   const RC = { owner: '#ff2d55', admin: '#ff8a3d', jr: '#ffd34d', smod: '#b387ff', mod: '#6bb7ff' };
   let hist = [], unread = 0, open = false, err = '';
 

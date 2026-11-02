@@ -1,4 +1,4 @@
-/* Режим покера (♠): калькулятор шансов Texas Hold'em. Доступен Главному Администратору и роли ДПВ. */
+/* Режим покера (♠): калькулятор шансов Texas Hold'em. Доступен Администратору и роли ДПВ. */
 (function () {
   const S = window.PH, X = window.PHX;
   if (!S || !X) return;
@@ -151,7 +151,7 @@
     $('#pkOut').innerHTML = resHtml();
   }
   function openPoker() {
-    if (!S.poker) return X.gate('Дополнительные возможности', 'Доступны Главному Администратору и роли ДПВ.');
+    if (!S.poker) return X.gate('Дополнительные возможности', 'Доступны Администратору и роли ДПВ.');
     view = 'memo'; panel.classList.add('on');
     list.innerHTML = backBtn() + `<div class="det"><h2>♠ Дополнительные возможности: покер</h2><p class="t">Texas Hold'em: выберите карты, число оппонентов, банк и ставку, и хелпер посчитает шанс и подскажет действие.</p><div id="pkRoot"></div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
