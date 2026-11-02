@@ -1,4 +1,4 @@
-/* HSP Protect: набор защит Polix Helper. Здесь же самопроверка, которую показывают в ⚙ Настройки → HSP Protect. */
+/* HSP Protect: набор защит Helper Pix. Здесь же самопроверка, которую показывают в ⚙ Настройки → HSP Protect. */
 const fs = require('fs');
 const path = require('path');
 const { app, safeStorage } = require('electron');

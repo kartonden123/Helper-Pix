@@ -121,6 +121,18 @@
       <p class="t" style="margin-top:12px">Открыто статей: <b>${st.open || 0}</b> · поисков: <b>${st.search || 0}</b>. Данные хранятся только на вашем компьютере.</p></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
   }
+  const FORMS = [
+    ['💡 Предложить улучшение', 'https://docs.google.com/forms/d/e/1FAIpQLSdoZQpmD-9wx0NxMwbYjN6p4ukFYR4gdobYlUE155-L-kALrA/viewform'],
+    ['🐞 Сообщить об ошибке', 'https://docs.google.com/forms/d/e/1FAIpQLSc0-Q_ehH2HtBHLg0nlwLVkVNb6smSl2CEYVe8GGug4ipd5mg/viewform'],
+    ['🎭 Заявка на роль', 'https://docs.google.com/forms/d/e/1FAIpQLSdu2YeRYsJCTDCZ0N7Ca496gTUaBp-0WVRXH2l1yN8Ro2rNsw/viewform'],
+    ['⚠️ Подать жалобу', 'https://docs.google.com/forms/d/e/1FAIpQLSc0omutljDnuSLBSrLf-hpcVB7SpRxOuPAGOju3bFNZscmvJQ/viewform'],
+    ['💬 Сервер Helper Pix в Discord', 'https://discord.gg/2C2zUgv3VC']];
+  function openForms() {
+    view = 'memo'; panel.classList.add('on');
+    list.innerHTML = backBtn() + '<div class="det"><h2>📨 Связь и формы</h2><p class="t">Заявки попадают персоналу Helper Pix в Discord, там их одобряют или отклоняют с причиной.</p>' + FORMS.map((f, i) => '<button class="tl-card" data-f="' + i + '" style="margin:6px 0;width:100%"><b>' + f[0] + '</b></button>').join('') + '</div>';
+    $('#bk').onclick = goBack; $('#cnt').textContent = '';
+    list.querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => window.overlay && window.overlay.openUrl && window.overlay.openUrl(FORMS[+b.dataset.f][1])));
+  }
   function openClock() {
     view = 'memo'; panel.classList.add('on');
     list.innerHTML = backBtn() + `<div class="det"><h2>🕒 Часы</h2><div id="clk" style="font-size:15px;line-height:2"></div><p class="t">«Ночь» по административному кодексу: с 22:00 до 08:00 (громкая музыка и крики запрещены).</p></div>`;
@@ -145,11 +157,12 @@
       <button class="tl-card" data-t="srv"><b>🌐 Онлайн серверов</b><span>Las Vegas и остальные: игроки, очередь, график</span></button>
       <button class="tl-card" data-t="lim"><b>⏳ Срок давности</b><span>Сколько осталось привлечь по АК (7 дней)</span></button>
       <button class="tl-card" data-t="stat"><b>📊 Моя статистика</b><span>Избранное, дела, открытые статьи</span></button>
+      <button class="tl-card" data-t="frm"><b>📨 Связь и формы</b><span>Предложения, ошибки, роли, жалобы, Discord</span></button>
       <button class="tl-card" data-t="bug"><b>🐞 Сообщить об ошибке</b><span>Открыть страницу обращений на GitHub</span></button>
       <button class="tl-card" data-t="clk"><b>🕒 Часы</b><span>Московское время, UTC и ночь по закону (22:00–08:00)</span></button>
     </div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
-    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
+    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, frm: openForms, bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
   }
 
   /* ---------- 4. Калькулятор прямо в поиске ---------- */

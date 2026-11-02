@@ -6,7 +6,7 @@ try {
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^ph_/.test(k) && !(k in m)) ipcRenderer.send('ls-set', k, localStorage.getItem(k)); }
 } catch (e) {}
 contextBridge.exposeInMainWorld('overlay', {
-  version: '2.8.2',
+  version: '2.8.3',
   lsSet: (k, v) => ipcRenderer.send('ls-set', k, v),
   protectStatus: () => ipcRenderer.invoke('protect-status'),
   serverOnline: (force) => ipcRenderer.invoke('server-online', !!force),

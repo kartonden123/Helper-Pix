@@ -11,7 +11,7 @@ const auth = require('./auth');
   ipcMain.on = (ch, fn) => _on(ch, (e, ...a) => { if (trusted(e)) fn(e, ...a); else if (ch === 'ls-load') e.returnValue = {}; });
 }
 
-const APP_NAME = 'Polix Helper';
+const APP_NAME = 'Helper Pix';
 const STATS_URL = 'https://polix-helper-stats.kartonden123.workers.dev';   // сервер статистики (Cloudflare Worker)
 const OPACITY = 1;             // полная непрозрачность окна: фон сайта не просвечивает
 const WIDTH = 940;
@@ -227,7 +227,7 @@ function setupUpdater() {
     updateTrayMenu();
     if (declinedVersion === i.version) { pushUpdate({ type: 'none', version: i.version, later: true, avail: true }); return; }
     pushUpdate({ type: 'available', version: i.version });
-    if (notifiedUpdate !== i.version) { notifiedUpdate = i.version; notify('Доступно обновление', 'Polix Helper ' + i.version + ' готов к скачиванию. Откройте меню (Alt+Q).', 'update'); }
+    if (notifiedUpdate !== i.version) { notifiedUpdate = i.version; notify('Доступно обновление', 'Helper Pix ' + i.version + ' готов к скачиванию. Откройте меню (Alt+Q).', 'update'); }
     showWin();
   });
   autoUpdater.on('update-not-available', () => { updateState = 'Установлена последняя версия'; updateTrayMenu(); });
@@ -406,7 +406,7 @@ ipcMain.handle('set-pref', (_e, key, value) => {
   try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), [key]: value })); } catch (e) {}
   return { ok: true, value };
 });
-ipcMain.on('open-url', (_e, u) => { if (/^https:\/\/github\.com\/kartonden123\//.test(String(u))) require('electron').shell.openExternal(String(u)); });ipcMain.handle('ui-prefs', () => { const p = readPrefs(); return { snap: snapOn(), autohide: !!p.autohide, hotkey: hotKeys[0], width: winWidth(), toastPos: p.toastPos || 'br', toastSec: +p.toastSec || 8, toastSound: !!p.toastSound, notif: p.notif || {} }; });
+ipcMain.on('open-url', (_e, u) => { if (/^https:\/\/(github\.com\/kartonden123\/|docs\.google\.com\/forms\/d\/e\/|discord\.gg\/2C2zUgv3VC$)/.test(String(u))) require('electron').shell.openExternal(String(u)); });ipcMain.handle('ui-prefs', () => { const p = readPrefs(); return { snap: snapOn(), autohide: !!p.autohide, hotkey: hotKeys[0], width: winWidth(), toastPos: p.toastPos || 'br', toastSec: +p.toastSec || 8, toastSound: !!p.toastSound, notif: p.notif || {} }; });
 ipcMain.on('ov-autohide', (_e, on) => { try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), autohide: !!on })); } catch (e) {} });
 ipcMain.on('ov-opacity', (_e, v) => { if (win && v >= 0.3 && v <= 1) win.setOpacity(v); });
 ipcMain.on('ov-position', (_e, side) => {

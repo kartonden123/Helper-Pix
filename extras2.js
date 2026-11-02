@@ -1,4 +1,4 @@
-/* Polix Helper 1.6: быстрые кнопки в поиске, заметки, рапорт, таймеры, фильтры, настройки, история запросов, горячие клавиши. */
+/* Helper Pix 1.6: быстрые кнопки в поиске, заметки, рапорт, таймеры, фильтры, настройки, история запросов, горячие клавиши. */
 (function () {
   const X = window.PHX, S = window.PH;
   if (!X || !S) return;
@@ -184,7 +184,7 @@
       <div class="set-row"><small>Размытие живое: фон под плашками обновляется несколько раз в секунду (в записи и трансляции экрана меню при этом не видно). ИИ: 10 вопросов в день.</small></div>`
       : (S.premium ? lock('Ультра Премиум: неоновая рамка, свой цвет, ИИ на 10 вопросов в день. Выдаёт администрация.') : '');
     list.innerHTML = backBtn() + `<div class="det"><h2>⚙ Настройки</h2>
-      <div class="about"><img src="logo.png" alt=""><div><b>Polix Helper <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>
+      <div class="about"><img src="logo.png" alt=""><div><b>Helper Pix <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>
       <div class="actions"><button class="abtn" id="updChk">🔄 Проверить обновления</button><button class="abtn" id="autoBtn">🚀 Автозапуск с Windows…</button><button class="abtn" id="ntBtn">🔔 Проверить уведомления</button><button class="abtn${LS.get('ph_autohide', false) ? ' on' : ''}" id="ahBtn">${LS.get('ph_autohide', false) ? '✔ Скрывать при клике мимо' : 'Скрывать при клике мимо'}</button></div><div class="set-row" id="updRes"></div>
       <div class="set-row">Размер текста: <b id="zv">${zoom}%</b></div><input class="rng" id="zr" type="range" min="80" max="140" step="5" value="${zoom}">
       ${premBlock}${ultraBlock}</div>`;

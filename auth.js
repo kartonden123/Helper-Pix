@@ -6,7 +6,7 @@ const fs = require('fs');
 
 // Публичные значения, секретов здесь нет (вход по PKCE без Client Secret).
 const CLIENT_ID = '1566391859494912120';
-const GUILD_ID = '1548704059601453056';
+const GUILD_ID = '1566804920915722270';
 const ROLE_ID = '';                       // '' = достаточно быть на сервере; иначе нужна эта роль
 const PORT = 53682;
 const REDIRECT = `http://127.0.0.1:${PORT}/callback`;
@@ -46,10 +46,10 @@ async function api(pathname, token) {
 async function verify(token) {
   const user = await api('/users/@me', token);
   const guilds = await api('/users/@me/guilds', token);
-  if (!guilds.some(g => g.id === GUILD_ID)) return { ok: false, user, reason: 'Вы не состоите на сервере семьи.' };
+  if (!guilds.some(g => g.id === GUILD_ID)) return { ok: false, user, reason: 'Для входа нужно состоять на Discord-сервере Helper Pix.' };
   if (ROLE_ID) {
     const m = await api(`/users/@me/guilds/${GUILD_ID}/member`, token);
-    if (!(m.roles || []).includes(ROLE_ID)) return { ok: false, user, reason: 'У вас нет нужной роли на сервере семьи.' };
+    if (!(m.roles || []).includes(ROLE_ID)) return { ok: false, user, reason: 'У вас нет нужной роли на сервере Helper Pix.' };
   }
   return { ok: true, user, reason: '' };
 }
@@ -102,7 +102,7 @@ function login() {
         const v = await verify(t.access_token);
         accessToken = t.access_token;
         save({ refresh: enc(t.refresh_token), user: publicUser(v.user), ok: v.ok, checkedAt: Date.now() });
-        page(v.ok ? 'Готово! Вернитесь в Polix Helper.' : esc(v.reason));
+        page(v.ok ? 'Готово! Вернитесь в Helper Pix.' : esc(v.reason));
         finish({ ok: v.ok, user: publicUser(v.user), reason: v.reason });
       } catch (e) {
         page('Ошибка входа.'); finish({ ok: false, user: null, reason: 'Ошибка входа: ' + e.message });

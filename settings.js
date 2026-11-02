@@ -8,7 +8,8 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
-    ['2.8.2', 'Онлайн теперь внутри строки меню'],
+        ['2.8.3', 'Теперь Helper Pix: вход через сервер Helper Pix, формы и приглашение в Инструментах'],
+        ['2.8.2', 'Онлайн теперь внутри строки меню'],
     ['2.8.1', 'HSP Protect: защита приложения и сервера, самопроверка в настройках'],
     ['2.8.0', 'Онлайн Las Vegas и всех серверов, 10 новых особых ролей, уставы FIB, Weazel, прокуратуры, настройки не теряются'],
     ['2.7.0', 'Новые настройки (около 40), исправлена ошибка «bad token», список слева больше не висит поверх других экранов'],
@@ -158,7 +159,7 @@
     if (id === 'about') {
       const ver = ov.version || '';
       const tierName = S.admin ? 'Главный Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
-      return `<div class="about" style="margin-bottom:12px"><img src="logo.png" alt=""><div><b>Polix Helper <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>` +
+      return `<div class="about" style="margin-bottom:12px"><img src="logo.png" alt=""><div><b>Helper Pix <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>` +
         card('Обновления', row('Проверить обновления', '<span id="updRes">Новые версии приходят сами через 45 секунд после выхода</span>', btn('updChk', '🔄 Проверить')) +
         row('Все версии и изменения', 'Страница релизов на GitHub', btn('stGh', 'Открыть'))) +
         `<div class="st-h">Что нового</div><div class="st-card st-news">${NEWS.map(([v, t]) => `<div><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('')}</div>`;
@@ -224,7 +225,7 @@
         const r = ov.protectStatus ? await ov.protectStatus() : null;
         if (!r || !r.checks) { hb.innerHTML = '<p class="t">Проверка недоступна в этой версии.</p>'; return; }
         const pct = Math.round(r.score / r.total * 100);
-        hb.innerHTML = `<div class="about" style="margin-bottom:12px"><div style="font-size:34px">🛡</div><div><b>HSP Protect <span style="color:var(--accent)">${r.score} из ${r.total}</span></b><small>Защита Polix Helper · версия ${esc(r.version)} · проверено ${new Date(r.checkedAt).toLocaleTimeString('ru-RU')}</small></div></div>
+        hb.innerHTML = `<div class="about" style="margin-bottom:12px"><div style="font-size:34px">🛡</div><div><b>HSP Protect <span style="color:var(--accent)">${r.score} из ${r.total}</span></b><small>Защита Helper Pix · версия ${esc(r.version)} · проверено ${new Date(r.checkedAt).toLocaleTimeString('ru-RU')}</small></div></div>
           <div class="st-card" style="padding:0 14px"><div class="st-row" style="padding:9px 0"><div class="l"><b>Уровень защиты</b></div><div style="flex:1;max-width:220px;height:8px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:${pct >= 90 ? '#3ddc84' : pct >= 70 ? '#ffc43c' : '#ff6b6b'}"></i></div><b>${pct}%</b></div></div>
           <div class="st-card">${r.checks.map((c) => row((c.ok ? '✅ ' : '⚠ ') + esc(c.label), esc(c.note), '')).join('')}</div>
           <div class="actions"><button class="abtn on" id="hspRe">🔄 Проверить ещё раз</button></div>
