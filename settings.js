@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.3.6', 'Новый стиль анимаций: плавное появление с лёгким размытием вместо резких «выскакиваний» и вращений'],
         ['3.3.5', 'Панель иконок: убрана розовая рамка вокруг строки при нажатии на кнопки, поправлены отступы'],
         ['3.3.4', 'Экран покупки сразу показывает подтверждённую оплату: проверка раз в 2 секунды и мгновенное обновление от сервера'],
         ['3.3.3', 'Панель иконок переделана: раскрывается прямо в строке по очереди, без наложения на поиск'],
