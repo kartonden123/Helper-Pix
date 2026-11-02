@@ -9,7 +9,9 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  .lvpill{position:absolute;top:8px;left:140px;display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;color:#dcd6e0;background:rgba(255,255,255,.07);border:1px solid var(--line);cursor:pointer;transition:.15s;z-index:3;white-space:nowrap}
+  .lvpill{flex:none;display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;color:#dcd6e0;background:rgba(255,255,255,.07);border:1px solid var(--line);cursor:pointer;transition:.15s;white-space:nowrap;-webkit-app-region:no-drag}
+  .lvpill .lvq,.lvpill .lvn{display:none}
+  @media (min-width:1000px){.lvpill .lvn{display:inline}.lvpill .lvq{display:inline}}
   .lvpill:hover{border-color:rgba(var(--acc-rgb),.7);color:#fff}
   .lvpill i{width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 6px #3ddc84}
   .lvpill.down i{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b}.lvpill.tech i{background:#ffc43c;box-shadow:0 0 6px #ffc43c}
@@ -37,14 +39,18 @@
   }
 
   function pill() {
-    const ui = $('#ui'); if (!ui) return;
+    const bar = $('#bar'); if (!bar) return;
     let p = $('#lvPill');
-    if (!p) { p = document.createElement('div'); p.id = 'lvPill'; p.className = 'lvpill'; p.title = 'Онлайн серверов'; p.onclick = () => openServers(); ui.appendChild(p); }
+    if (!p) {
+      p = document.createElement('div'); p.id = 'lvPill'; p.className = 'lvpill'; p.title = 'Онлайн серверов'; p.onclick = () => openServers();
+      const first = bar.querySelector('.ib'); bar.insertBefore(p, first || null);   // внутри строки меню, перед кнопками
+    }
     const s = me();
     document.documentElement.classList.toggle('nolv', LS.get('ph_lvPill', true) === false);
     if (!s) { p.className = 'lvpill down'; p.innerHTML = '<i></i>Онлайн: нет данных'; return; }
     p.className = 'lvpill' + (s.tech ? ' tech' : s.up ? '' : ' down');
-    p.innerHTML = `<i></i>${s.name}: ${fmt(s.players)}${s.queue ? ' · очередь ' + s.queue : ''}${s.tech ? ' · техработы' : ''}`;
+    p.title = s.name + ': ' + fmt(s.players) + ' игроков' + (s.queue ? ', очередь ' + s.queue : '') + (s.tech ? ', технические работы' : '') + '. Нажмите, чтобы открыть все серверы';
+    p.innerHTML = `<i></i><span class="lvn">${s.name}:&nbsp;</span>${fmt(s.players)}<span class="lvq">${s.queue ? ' · очередь ' + s.queue : ''}${s.tech ? ' · техработы' : ''}</span>`;
   }
 
   function spark() {
