@@ -262,6 +262,14 @@
     S.role = s.role || ''; S.rank = rank(S.role); S.premium = !!s.premium; S.admin = S.role === 'owner'; S.tier = s.tier || (S.premium ? 'premium' : ''); S.ultra = S.tier === 'ultra'; S.roles = s.roles || (S.role ? [S.role] : []); S.poker = S.role === 'owner' || S.roles.includes('dpv');
     const pk = $('#pokerBtn'); if (pk) pk.style.display = S.poker ? '' : 'none';
     if (s.user) S.id = s.user.id;
+    if (s.outdated) {
+      document.getElementById('ui').innerHTML = '<div class="bancard"><div style="font-size:34px">⬆️</div><h2 style="margin:8px 0">Нужно обновление</h2><p style="color:#cfc8d3">Ваша версия ' + esc(s.current) + ' сильно отстала от ' + esc(s.latest) + ', функции отключены до обновления.</p><div class="actions" style="justify-content:center"><button class="abtn on" id="ouGo">Обновить сейчас</button><button class="abtn" id="ouWeb">Скачать вручную</button></div><p id="ouSt" style="color:#cfc8d3"></p></div>';
+      const st = $('#ouSt'), ov = window.overlay;
+      if (ov.onUpdate && !window.__ouBound) { window.__ouBound = true; ov.onUpdate((u) => { const el = $('#ouSt'); if (!el || !u) return; if (u.type === 'available') ov.updateAction('download'); else if (u.type === 'downloading') el.textContent = 'Скачивание…'; else if (u.type === 'ready') ov.updateAction('install'); }); }
+      $('#ouGo').onclick = () => { st.textContent = 'Проверяю…'; ov.checkUpdate && ov.checkUpdate(); };
+      $('#ouWeb').onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Pix/releases/latest');
+      return;
+    }
     if (s.banned) {
       document.getElementById('ui').innerHTML = '<div class="bancard"><div style="font-size:34px">🚫</div><h2 style="margin:8px 0">Доступ ограничен</h2><p style="color:#cfc8d3">Администратор ограничил вам доступ к хелперу. Если это ошибка, напишите администрации семьи.</p></div>';
       return;

@@ -242,7 +242,9 @@ function setupUpdater() {
   setInterval(watchRelease, 45 * 1000);
 }
 // как только GitHub отдаёт новый latest.yml (сборка готова), сразу запрашиваем обновление
-let remoteSeen = null;
+let remoteSeen = null, latestSeen = '';
+// версия отстаёт на 2 и больше по среднему числу (3.0.x при актуальной 3.2.0) или по первому числу: функции блокируются до обновления
+const isOutdated = () => { if (!app.isPackaged || !latestSeen) return false; const c = vnum(app.getVersion()), l = vnum(latestSeen); return l[0] > c[0] || (l[0] === c[0] && l[1] - c[1] >= 2); };
 const vnum = (v) => String(v).split('.').map((x) => parseInt(x, 10) || 0);
 const newer = (a, b) => { const x = vnum(a), y = vnum(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 async function watchRelease() {
@@ -251,6 +253,7 @@ async function watchRelease() {
     const r = await fetch('https://github.com/kartonden123/Helper-Pix/releases/latest/download/latest.yml', { headers: { 'Cache-Control': 'no-cache' } });
     if (!r.ok) return;
     const m = /^version:\s*([\d.]+)/m.exec(await r.text());
+    if (m) latestSeen = m[1];
     if (m && m[1] !== remoteSeen) { remoteSeen = m[1]; if (newer(m[1], app.getVersion())) checkUpdates(); }
   } catch (e) {}
 }
@@ -507,6 +510,7 @@ ipcMain.handle('viewas-set', (_e, v) => { if (!auth.get().admin) return ''; view
 ipcMain.handle('auth-state', async (_e, fast) => {
   if (!fast) await refreshMe();
   const s = auth.get();
+  if (isOutdated()) return { ...s, outdated: true, latest: latestSeen, current: app.getVersion(), role: '', roles: [], staff: false, premium: false, tier: '', announce: null };
   const va = s.ok && s.admin ? viewAs : '';   // режим «смотреть как»: только внешний вид для Администратора, права на сервере не меняются
   if (va) {
     const tr = va === 'ultra' ? 'ultra' : va === 'premium' ? 'premium' : '';
