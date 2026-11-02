@@ -40,7 +40,7 @@
   function equity(hole, board, opps, sims) {
     const used = new Set([...hole, ...board]);
     const deck = []; for (let c = 0; c < 52; c++) if (!used.has(c)) deck.push(c);
-    let win = 0, tie = 0;
+    let win = 0, tie = 0, wins = 0, ties = 0; const cats = new Array(9).fill(0);
     const need = 5 - board.length;
     for (let i = 0; i < sims; i++) {
       // частичная перетасовка
@@ -53,9 +53,20 @@
         const sc = score7([deck[need + o * 2], deck[need + o * 2 + 1]].concat(full));
         if (sc > best) { best = sc; cnt = 1; } else if (sc === best) cnt++;
       }
-      if (mine > best) win++; else if (mine === best) tie += 1 / (cnt + 1);
+      cats[Math.floor(mine / 1048576)]++;
+      if (mine > best) { win++; wins++; } else if (mine === best) { tie += 1 / (cnt + 1); ties++; }
     }
+    equity.last = { win: wins / sims, tie: ties / sims, lose: 1 - (wins + ties) / sims, cats: cats.map((c) => c / sims) };
     return (win + tie) / sims;
+  }
+
+  const CATS = ['Старшая карта', 'Пара', 'Две пары', 'Тройка (сет)', 'Стрит', 'Флеш', 'Фулл-хаус', 'Каре', 'Стрит-флеш'];
+  // сколько карт колоды улучшают комбинацию (на флопе и тёрне)
+  function outs(hole, board) {
+    if (board.length < 3 || board.length > 4) return null;
+    const used = new Set([...hole, ...board]), cur = Math.floor(score7(hole.concat(board)) / 1048576);
+    const list = []; for (let c = 0; c < 52; c++) if (!used.has(c) && Math.floor(score7(hole.concat(board, [c])) / 1048576) > cur) list.push(c);
+    return { n: list.length, left: 52 - used.size, cur };
   }
 
   /* ---------- интерфейс ---------- */
@@ -118,17 +129,25 @@
     };
   }
   function resHtml() {
-    const [txt, col] = advice(res.eq);
-    return `<div class="pk-res"><div class="big">${(res.eq * 100).toFixed(1)}%</div><div class="pk-bar"><i style="width:${(res.eq * 100).toFixed(0)}%"></i></div>
+    const [txt, col] = advice(res.eq), d = res.d, pc = (x) => (x * 100).toFixed(1) + '%';
+    const o = res.outs;
+    const catsHtml = d.cats.map((v, k) => [k, v]).filter((x) => x[1] >= 0.0005).reverse().map(([k, v]) => '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px"><span>' + CATS[k] + '</span><b>' + pc(v) + '</b></div>').join('');
+    const ev = res.need !== null ? res.eq * (pot + call) - (1 - res.eq) * call : null;
+    return `<div class="pk-res"><div class="big">${pc(res.eq)}</div><div class="pk-bar"><i style="width:${(res.eq * 100).toFixed(0)}%"></i></div>
       <div class="pk-adv" style="color:${col}">${txt}</div>
-      <p class="t" style="margin:6px 0 0;font-size:12px">${res.need !== null ? `Нужный шанс по pot odds: ${(res.need * 100).toFixed(1)}%. ` : ''}Оценка против ${opps} случайн. рук, ${res.sims} симуляций. Подсказка математическая и не учитывает поведение игроков.</p></div>`;
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0;font-size:13px"><span>Победа <b style="color:#3ddc84">${pc(d.win)}</b></span><span>Ничья <b style="color:#ffd36b">${pc(d.tie)}</b></span><span>Проигрыш <b style="color:#ff7b7b">${pc(d.lose)}</b></span></div>
+      ${o ? `<p class="t" style="margin:4px 0;font-size:13px">Сейчас: <b>${CATS[o.cur]}</b>. Аутов (карт, что усилят руку): <b>${o.n}</b> из ${o.left}, шанс на следующей карте <b>${pc(o.n / o.left)}</b>${board.length === 3 ? ', к риверу около <b>' + pc(1 - ((o.left - o.n) / o.left) * ((o.left - 1 - o.n) / (o.left - 1))) + '</b>' : ''}.</p>` : ''}
+      ${ev !== null ? `<p class="t" style="margin:4px 0;font-size:13px">Нужный шанс по pot odds: <b>${pc(res.need)}</b>. Ожидаемый результат колла: <b style="color:${ev >= 0 ? '#3ddc84' : '#ff7b7b'}">${ev >= 0 ? '+' : ''}${Math.round(ev)}</b>.</p>` : ''}
+      <details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Шансы собрать комбинацию к риверу</summary><div style="margin-top:6px;display:grid;gap:3px">${catsHtml}</div></details>
+      <p class="t" style="margin:8px 0 0;font-size:12px">Оценка против ${opps} случайн. рук, ${res.sims} симуляций. Подсказка математическая и не учитывает поведение игроков.</p></div>`;
   }
   function go() {
     if (hole.length < 2) { $('#pkOut').innerHTML = '<p class="t">Выберите две свои карты.</p>'; return; }
     if (board.length === 1 || board.length === 2) { $('#pkOut').innerHTML = '<p class="t">На столе должно быть 0, 3, 4 или 5 карт.</p>'; return; }
     opps = Math.min(8, Math.max(1, +$('#pkO').value || 1)); pot = Math.max(0, +$('#pkP').value || 0); call = Math.max(0, +$('#pkC').value || 0);
-    const sims = 6000;
-    res = { eq: equity(hole, board, opps, sims), sims, need: call > 0 ? call / (pot + call) : null };
+    const sims = 12000;
+    const eq = equity(hole, board, opps, sims);
+    res = { eq, d: equity.last, outs: outs(hole, board), sims, need: call > 0 ? call / (pot + call) : null };
     $('#pkOut').innerHTML = resHtml();
   }
   function openPoker() {
