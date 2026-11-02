@@ -360,8 +360,10 @@ ipcMain.on('update-action', (_e, a) => {
 // автозапуск с Windows (по умолчанию включён при первом запуске) и размытие фона (Ультра Премиум)
 const AUTOSTART_FLAG = () => path.join(app.getPath('userData'), 'autostart-init');
 function setAutostart(on) { if (!app.isPackaged) return; try { app.setLoginItemSettings({ openAtLogin: !!on, args: ['--hidden'] }); } catch (e) { log('autostart error ' + e.message); } }
-ipcMain.handle('autostart-get', () => (app.isPackaged ? app.getLoginItemSettings().openAtLogin : false));
-ipcMain.handle('autostart-set', (_e, on) => { setAutostart(on); return app.isPackaged ? app.getLoginItemSettings().openAtLogin : false; });
+// На Windows getLoginItemSettings сравнивает аргументы запуска: без тех же args всегда false
+const autostartState = () => { try { return !!app.getLoginItemSettings({ args: ['--hidden'] }).openAtLogin; } catch (e) { return false; } };
+ipcMain.handle('autostart-get', () => (app.isPackaged ? autostartState() : false));
+ipcMain.handle('autostart-set', (_e, on) => { setAutostart(on); return app.isPackaged ? autostartState() : false; });
 // снимок экрана для режима покера (только Администратор и роль ДПВ); файл остаётся у пользователя на компьютере
 ipcMain.handle('poker-shot', async () => {
   if (!(auth.get().admin || (me.roles || []).includes('dpv'))) return { error: 'forbidden' };
