@@ -14,7 +14,7 @@
   SP.forEach(([k, ic, n, c]) => { RN[k] = ic + ' ' + n; RC[k] = c; });
   const spOptions = (u) => '<option value="">＋ Особая роль…</option>' + SP.map(([k, ic, n, , perk]) => { const has = (u.roles || []).includes(k); return `<option value="${k}">${has ? '✔ снять' : 'выдать'}: ${ic} ${n}${perk ? ' (' + perk + ')' : ''}</option>`; }).join('');
   const rank = (r) => RK[r] || 0;
-  const rb = (r) => (r ? `<span class="rbadge" style="--c:${RC[r] || '#ccc'}">${RN[r] || esc(r)}</span>` : '');
+  const rb = (r) => (r ? `<span class="rbadge" style="--c:${RC[r] || '#ccc'}"><i class="rdot"></i>${RN[r] || esc(r)}</span>` : '');
   const rbs = (u) => ((u.roles && u.roles.length) ? u.roles : [u.role]).filter(Boolean).sort((a, b) => rank(b) - rank(a)).map(rb).join('');
   const tierOf = (u) => u.tier || (u.premium ? 'premium' : '');
   const pb = (u) => { const t = tierOf(u); return t === 'ultra' && !(RK[u.role] >= 4) ? '<span class="rbadge" style="--c:#5ef0ff">💎 Ультра</span>' : t === 'premium' && !u.role ? '<span class="rbadge" style="--c:#ffc43c">Premium</span>' : ''; };
@@ -22,7 +22,17 @@
   const css = document.createElement('style');
   css.textContent = `
   .rbadge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
-  .urow{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;animation:slideR .35s both}
+  .urow{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px}
+  .urow.in{animation:slideR .35s both}
+  .rdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px;box-shadow:0 0 6px var(--c)}
+  .rpick{grid-column:1/-1;display:none;flex-wrap:wrap;gap:6px;padding:8px 2px 2px}.rpick.open{display:flex}
+  .rpick .rg{width:100%;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .rop{display:inline-flex;align-items:center;gap:2px;font:inherit;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;cursor:pointer;color:#ddd;background:rgba(255,255,255,.05);border:1px solid var(--line);transition:.15s}
+  .rop:hover:not(:disabled){border-color:var(--c);color:#fff}
+  .rop.on{color:var(--c);background:color-mix(in srgb,var(--c) 18%,transparent);border-color:color-mix(in srgb,var(--c) 60%,transparent)}
+  .rop:disabled{opacity:.35;cursor:not-allowed}
+  .rop .ck{margin-left:5px;font-weight:800}
+  .rrow{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
   .urow:nth-child(odd){background:rgba(255,255,255,.04)}
   .urow small{color:var(--muted);font-size:11.5px}
   .uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
@@ -64,20 +74,34 @@
   let cache = null, filt = '';
   function roleOptions(cur, target) {
     const mineRank = rank(S.role);
-    const opts = [['', 'Без роли'], ['mod', 'Модератор'], ['smod', 'Ст. Модератор'], ['jr', 'Мл. Администратор']];
+    const mr = rank(S.role), opts = [['', 'Без роли']];
+    if (mr >= 2) opts.push(['mod', 'Модератор']); if (mr >= 3) opts.push(['smod', 'Ст. Модератор']); if (mr >= 4) opts.push(['jr', 'Мл. Администратор']);
     if (S.role === 'owner') opts.push(['admin', 'Зам. Администратор']);
     return opts.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('');
   }
   function canEdit(u) { return S.role === 'owner' ? u.role !== 'owner' : rank(S.role) >= 4 && rank(u.role) < rank(S.role); }
 
-  function userRow(u) {
+  // единый список ролей: штатные и особые равноправны, у человека может быть любой набор
+  const STAFF_ROLES = [['mod', 'Модератор'], ['smod', 'Ст. Модератор'], ['jr', 'Мл. Администратор'], ['admin', 'Зам. Администратор']];
+  const canGrant = (k, u) => {
+    if (u.role === 'owner' || u.id === (S.id || '')) return false;
+    if (SP.some((x) => x[0] === k)) return S.role === 'owner' || rank(S.role) >= 3;
+    if (S.role === 'owner') return true;
+    return rank(S.role) > RK[k] && rank(u.role) < rank(S.role);
+  };
+  const hasRole = (u, k) => (RK[k] ? u.role === k : (u.roles || []).includes(k));
+  function pickerHtml(u) {
+    const btn = (k, label, ic) => { const on = hasRole(u, k), ok = canGrant(k, u); return `<button class="rop${on ? ' on' : ''}" style="--c:${RC[k]}" data-rp="${k}" data-id="${esc(u.id)}"${ok ? '' : ' disabled title="Недостаточно прав"'}><i class="rdot"></i>${ic ? ic + ' ' : ''}${label}${on ? '<span class="ck">✓</span>' : ''}</button>`; };
+    return '<div class="rg">Роли персонала</div>' + STAFF_ROLES.map(([k, n]) => btn(k, n, '')).join('') + '<div class="rg">Другие роли</div>' + SP.map(([k, ic, n]) => btn(k, n, ic)).join('');
+  }
+  function userRow(u, anim) {
     const mine = rank(S.role);
     const staff = u.role !== '';
     const premBtn = mine >= 3 && !staff ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}"><option value="0"${tierOf(u) === '' ? ' selected' : ''}>Без Premium</option><option value="1"${tierOf(u) === 'premium' ? ' selected' : ''}>⭐ Premium</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
-    const roleSel = mine >= 4 && canEdit(u) ? `<select class="mini" data-a="role" data-id="${esc(u.id)}">${roleOptions(u.role, u)}</select>` : '';
-    const dpvBtn = mine >= 4 ? `<select class="mini" data-a="sp" data-id="${esc(u.id)}">${spOptions(u)}</select>` : '';
+    const roleSel = '';
+    const dpvBtn = mine >= 2 && u.role !== 'owner' ? `<button class="mini" data-a="rp" data-id="${esc(u.id)}">🎭 Роли</button>` : '';
     const banBtn = mine >= 4 && canEdit(u) ? `<button class="mini${u.banned ? ' bad' : ''}" data-a="ban" data-id="${esc(u.id)}">${u.banned ? '✔ разблок.' : '🚫 блок'}</button>` : '';
-    return `<div class="urow" data-uid="${esc(u.id)}"><span class="dot${u.online ? ' on' : ''}"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}${u.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}<br><small>${esc(u.id)} · v${esc(u.version || '?')} · ${ago(u.last_seen)}</small></span><div class="uact">${premBtn}${roleSel}${dpvBtn}${banBtn}</div></div>`;
+    return `<div class="urow${anim ? ' in' : ''}" data-uid="${esc(u.id)}"><span class="dot${u.online ? ' on' : ''}"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}${u.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}<br><small>${esc(u.id)} · v${esc(u.version || '?')} · ${ago(u.last_seen)}</small></span><div class="uact">${premBtn}${roleSel}${dpvBtn}${banBtn}</div><div class="rpick" data-pk="${esc(u.id)}">${pickerHtml(u)}</div></div>`;
   }
 
   async function act(kind, id, extra) {
@@ -98,7 +122,34 @@
     return r;
   }
 
+  // обновляем только одну строку, без перерисовки всего списка и без повторной анимации
+  function refreshRow(id) {
+    const old = list.querySelector('.urow[data-uid="' + id + '"]'); const u = cache && cache.users.find((x) => x.id === id); if (!old || !u) return;
+    const open = old.querySelector('.rpick.open');
+    const tmp = document.createElement('div'); tmp.innerHTML = userRow(u, false);
+    const nw = tmp.firstChild; if (open) nw.querySelector('.rpick').classList.add('open');
+    old.replaceWith(nw); bindRow(nw);
+  }
+  function bindRow(row) {
+    row.querySelectorAll('[data-a]').forEach((el) => bindOne(el));
+    row.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = async () => {
+      const id = b.dataset.id, k = b.dataset.rp, u = cache.users.find((x) => x.id === id); if (!u) return;
+      b.disabled = true;
+      const on = !hasRole(u, k);
+      if (RK[k]) await act('role', id, on ? k : ''); else await act('sp', id, { role: k, on });
+      refreshRow(id);
+    }));
+  }
+  function bindOne(el) {
+    const id = el.dataset.id, a = el.dataset.a;
+    if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
+    else if (a === 'role') el.onchange = async () => { await act('role', id, el.value); refreshRow(id); };
+    else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); refreshRow(id); };
+    else if (a === 'tier') el.onchange = async () => { await act('prem', id, +el.value); refreshRow(id); };
+    else el.onclick = async () => { const u = cache.users.find((x) => x.id === id); if (!u) return; await act(a, id, !u.banned); refreshRow(id); };
+  }
   function bindUsers() {
+    list.querySelectorAll('.urow').forEach(bindRow); return;
     list.querySelectorAll('[data-a]').forEach((el) => {
       const id = el.dataset.id, a = el.dataset.a;
       if (a === 'role') el.onchange = async () => { await act('role', id, el.value); drawUsers(); };
@@ -115,7 +166,7 @@
     const d = cache;
     box.innerHTML = `<div class="adm-top"><div><small>Всего</small><b>${d.total}</b></div><div><small>В сети</small><b style="color:#3ddc84">${d.online}</b></div><div><small>За 24 часа</small><b>${d.day}</b></div><div><small>Premium</small><b>${d.premiumCount}</b></div></div>
       <input class="fld" id="stFilter" placeholder="Поиск по имени или ID" value="${esc(filt)}"><div class="actions"><button class="abtn" id="stCopy">📋 Копировать список</button></div><div class="stmsg" id="stMsg"></div><div id="stList"></div>`;
-    const paint = () => { const f = filt.toLowerCase(); const arr = d.users.filter((u) => !f || (u.name || '').toLowerCase().includes(f) || u.id.includes(f)); $('#stList').innerHTML = arr.map(userRow).join('') || '<div class="empty">Никого не найдено</div>'; bindUsers(); paintMsg(); };
+    let firstPaint = true; const paint = () => { const f = filt.toLowerCase(); const arr = d.users.filter((u) => !f || (u.name || '').toLowerCase().includes(f) || u.id.includes(f)); $('#stList').innerHTML = arr.map((u) => userRow(u, firstPaint)).join('') || '<div class="empty">Никого не найдено</div>'; bindUsers(); paintMsg(); firstPaint = false; };
     const fi = $('#stFilter'); fi.addEventListener('keydown', (e) => e.stopPropagation()); fi.oninput = () => { filt = fi.value; paint(); };
     $('#stCopy').onclick = () => X.copy(d.users.map((u) => u.name + ' | ' + u.id + ' | ' + (RN[u.role] || '') + ' | ' + tierOf(u) + ' | v' + (u.version || '?')).join('\n'), $('#stCopy'));
     paint();
@@ -126,7 +177,7 @@
     view = 'memo'; panel.classList.add('on');
     const mine = rank(S.role);
     list.innerHTML = backBtn() + `<div class="det"><h2>👑 Панель персонала</h2><p class="t">Ваша роль: ${rb(S.role) || 'нет'}</p>
-      <div class="stab"><button class="abtn${tab === 'users' ? ' on' : ''}" data-t="users">👥 Люди</button>${mine >= 3 ? `<button class="abtn${tab === 'id' ? ' on' : ''}" data-t="id">🔑 По Discord ID</button>` : ''}${mine >= 4 ? `<button class="abtn${tab === 'ann' ? ' on' : ''}" data-t="ann">📢 Объявление</button>` : ''}</div>
+      <div class="stab"><button class="abtn${tab === 'users' ? ' on' : ''}" data-t="users">👥 Люди</button>${mine >= 2 ? `<button class="abtn${tab === 'id' ? ' on' : ''}" data-t="id">🔑 По Discord ID</button>` : ''}${mine >= 4 ? `<button class="abtn${tab === 'ann' ? ' on' : ''}" data-t="ann">📢 Объявление</button>` : ''}</div>
       <div id="stBody"><p class="t">Загрузка…</p></div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
     list.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => openStaff(b.dataset.t)));
@@ -138,8 +189,8 @@
     } else if (tab === 'id') {
       $('#stBody').innerHTML = `<input class="fld" id="stId" placeholder="Discord ID человека (ПКМ по нему → Копировать ID)"><div class="stmsg" id="stMsg"></div><div id="stInfo"></div>
         <div class="actions"><button class="abtn" id="stLook">🔎 Проверить</button><button class="abtn on" id="stPOn">⭐ Premium</button>${mine >= 4 ? '<button class="abtn on" id="stUOn">💎 Ультра Премиум</button>' : ''}<button class="abtn" id="stPOff">Снять</button></div>
-        ${mine >= 4 ? `<div class="actions"><select class="mini" id="stSp">${SP.map(([k, ic, n, , perk]) => `<option value="${k}">${ic} ${n}${perk ? ' (' + perk + ')' : ''}</option>`).join('')}</select><button class="abtn on" id="stDOn">Выдать особую роль</button><button class="abtn" id="stDOff">Снять</button></div>` : ''}
-        ${mine >= 4 ? `<div class="actions"><select class="mini" id="stRole">${roleOptions('', {})}</select><button class="abtn" id="stRoleGo">Назначить роль</button><button class="abtn" id="stBanOn">🚫 Заблокировать</button><button class="abtn" id="stBanOff">Разблокировать</button></div>` : ''}`;
+        ${mine >= 3 ? `<div class="actions"><select class="mini" id="stSp">${SP.map(([k, ic, n, , perk]) => `<option value="${k}">${ic} ${n}${perk ? ' (' + perk + ')' : ''}</option>`).join('')}</select><button class="abtn on" id="stDOn">Выдать особую роль</button><button class="abtn" id="stDOff">Снять</button></div>` : ''}
+        ${mine >= 2 ? `<div class="actions"><select class="mini" id="stRole">${roleOptions('', {})}</select><button class="abtn" id="stRoleGo">Назначить роль</button>${mine >= 4 ? '<button class="abtn" id="stBanOn">🚫 Заблокировать</button><button class="abtn" id="stBanOff">Разблокировать</button>' : ''}</div>` : ''}`;
       $('#stId').addEventListener('keydown', (e) => e.stopPropagation());
       const gid = () => { const v = $('#stId').value.trim(); if (!/^\d{5,25}$/.test(v)) { say('Введите Discord ID: только цифры.', false); return null; } return v; };
       $('#stLook').onclick = async () => {
@@ -150,11 +201,11 @@
         $('#stInfo').innerHTML = `<div class="note">${r.seen ? esc(r.seen.name) : 'Ещё не заходил в хелпер'}${rbs(r)}${pb(r)}${r.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}</div>`;
       };
       $('#stPOn').onclick = async () => { const id = gid(); if (id) await act('prem', id, 1); };
-      if (mine >= 4) { $('#stDOn').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: true }); }; $('#stDOff').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: false }); }; }
+      if (mine >= 3) { $('#stDOn').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: true }); }; $('#stDOff').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: false }); }; }
       if (mine >= 4) $('#stUOn').onclick = async () => { const id = gid(); if (id) await act('prem', id, 2); };
       $('#stPOff').onclick = async () => { const id = gid(); if (id) await act('prem', id, 0); };
+      if (mine >= 2) $('#stRoleGo').onclick = async () => { const id = gid(); if (id) await act('role', id, $('#stRole').value); };
       if (mine >= 4) {
-        $('#stRoleGo').onclick = async () => { const id = gid(); if (id) await act('role', id, $('#stRole').value); };
         $('#stBanOn').onclick = async () => { const id = gid(); if (id) await act('ban', id, true); };
         $('#stBanOff').onclick = async () => { const id = gid(); if (id) await act('ban', id, false); };
       }

@@ -157,12 +157,17 @@
       <button class="tl-card" data-t="srv"><b>🌐 Онлайн серверов</b><span>Las Vegas и остальные: игроки, очередь, график</span></button>
       <button class="tl-card" data-t="lim"><b>⏳ Срок давности</b><span>Сколько осталось привлечь по АК (7 дней)</span></button>
       <button class="tl-card" data-t="stat"><b>📊 Моя статистика</b><span>Избранное, дела, открытые статьи</span></button>
+      <button class="tl-card" data-t="pct"><b>％ Проценты</b><span>Процент от числа, изменение в процентах</span></button>
+      <button class="tl-card" data-t="cnt"><b>🔢 Счётчики</b><span>Задержания, штрафы, рапорты за смену</span></button>
+      <button class="tl-card" data-t="sw"><b>⏱ Секундомер и таймер</b><span>Круги и обратный отсчёт со звуком</span></button>
+      <button class="tl-card" data-t="num"><b>🧮 Числа и текст</b><span>Сумма чисел, счётчик слов, регистр</span></button>
+      <button class="tl-card" data-t="rand"><b>🎲 Жребий</b><span>Монета, кубик, случайный вариант</span></button>
       <button class="tl-card" data-t="frm"><b>📨 Связь и формы</b><span>Предложения, ошибки, роли, жалобы, Discord</span></button>
       <button class="tl-card" data-t="bug"><b>🐞 Сообщить об ошибке</b><span>Открыть страницу обращений на GitHub</span></button>
       <button class="tl-card" data-t="clk"><b>🕒 Часы</b><span>Московское время, UTC и ночь по закону (22:00–08:00)</span></button>
     </div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
-    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, frm: openForms, bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
+    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, frm: openForms, pct: () => window.PHX_tools2.pct(), cnt: () => window.PHX_tools2.counter(), sw: () => window.PHX_tools2.stopwatch(), num: () => window.PHX_tools2.numbers(), rand: () => window.PHX_tools2.random(), bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
   }
 
   /* ---------- 4. Калькулятор прямо в поиске ---------- */

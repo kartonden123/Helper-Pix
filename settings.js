@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['2.9.0', 'Новая панель ролей: все роли равны, цветные точки, без перерисовки; Модератора выдаёт Ст. Модератор и выше; новые инструменты'],
         ['2.8.5', 'Покер: все комбинации до флеш-рояля, шансы победы, аутс; ДПВ — дополнительные возможности'],
         ['2.8.4', 'Обновление приходит уведомлением, окно само не открывается'],
         ['2.8.3', 'Теперь Helper Pix: вход через сервер Helper Pix, формы и приглашение в Инструментах'],

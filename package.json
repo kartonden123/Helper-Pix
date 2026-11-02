@@ -1,6 +1,6 @@
 {
   "name": "majestic-catalog-overlay",
-  "version": "2.8.5",
+  "version": "2.9.0",
   "description": "Helper Pix by KATO",
   "main": "main.js",
   "author": "Pix™",
@@ -31,6 +31,7 @@
       "chat.js",
       "look.js",
       "tools.js",
+      "tools2.js",
       "memo.js",
       "settings.js",
       "online.js",
