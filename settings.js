@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+    ['2.8.1', 'HSP Protect: защита приложения и сервера, самопроверка в настройках'],
     ['2.8.0', 'Онлайн Las Vegas и всех серверов, 10 новых особых ролей, уставы FIB, Weazel, прокуратуры, настройки не теряются'],
     ['2.7.0', 'Новые настройки (около 40), исправлена ошибка «bad token», список слева больше не висит поверх других экранов'],
     ['2.6.2', 'Меню открывается там, где его свернули'],
@@ -88,7 +89,7 @@
   const P = '⭐ Premium', U = '💎 Ультра';
 
   let main = {};   // настройки основного процесса
-  const SECTIONS = [['gen', '⚙', 'Общие'], ['look', '🎨', 'Внешний вид'], ['search', '🔎', 'Поиск'], ['online', '🌐', 'Онлайн'], ['notif', '🔔', 'Уведомления'], ['keys', '⌨', 'Клавиши'], ['data', '💾', 'Данные'], ['about', 'ℹ', 'О программе']];
+  const SECTIONS = [['gen', '⚙', 'Общие'], ['look', '🎨', 'Внешний вид'], ['search', '🔎', 'Поиск'], ['online', '🌐', 'Онлайн'], ['notif', '🔔', 'Уведомления'], ['protect', '🛡', 'HSP Protect'], ['keys', '⌨', 'Клавиши'], ['data', '💾', 'Данные'], ['about', 'ℹ', 'О программе']];
   let cur = 'gen';
 
   function section(id) {
@@ -128,6 +129,7 @@
       row('Как часто обновлять', 'Данные берутся с majestic-rp.ru', sg('lvSec', [[30, '30 с'], [60, '1 мин'], [120, '2 мин'], [300, '5 мин']], LS.get('ph_lvSec', 60))) +
       row('Все серверы', 'Список, график, выбор своего сервера', btn('stSrv', '🌐 Открыть'))) +
       '<div class="st-msg" style="color:var(--muted)">Данные об онлайне получены с majestic-rp.ru. О техработах на Las Vegas хелпер сообщит уведомлением.</div>';
+    if (id === 'protect') return '<div id="hspBox"><p class="t">Проверяю защиту…</p></div>';
     if (id === 'notif') {
       const n = main.notif || {};
       const kinds = [['update', 'Новая версия'], ['role', 'Смена роли'], ['premium', 'Premium и Ультра'], ['ban', 'Блокировка'], ['announce', 'Объявления'], ['chat', 'Сообщения в чате']];
@@ -214,6 +216,22 @@
     const acc = box.querySelector('#stAcc'); if (acc) acc.oninput = () => { LS.set('ph_acc', acc.value); if (LS.get('ph_accOn', false)) { X.applyTheme(); syncAccent(); } };
     const at = box.querySelector('[data-tg="autostart"]'); if (at && ov.autostartGet) ov.autostartGet().then((on) => { at.checked = !!on; });
     const clrQ = box.querySelector('#stClrQ'); if (clrQ) clrQ.onclick = () => { LS.set('ph_q', []); clrQ.textContent = '✔ Очищено'; };
+    const hb = box.querySelector('#hspBox');
+    if (hb) {
+      const paint = async () => {
+        hb.innerHTML = '<p class="t">Проверяю защиту…</p>';
+        const r = ov.protectStatus ? await ov.protectStatus() : null;
+        if (!r || !r.checks) { hb.innerHTML = '<p class="t">Проверка недоступна в этой версии.</p>'; return; }
+        const pct = Math.round(r.score / r.total * 100);
+        hb.innerHTML = `<div class="about" style="margin-bottom:12px"><div style="font-size:34px">🛡</div><div><b>HSP Protect <span style="color:var(--accent)">${r.score} из ${r.total}</span></b><small>Защита Polix Helper · версия ${esc(r.version)} · проверено ${new Date(r.checkedAt).toLocaleTimeString('ru-RU')}</small></div></div>
+          <div class="st-card" style="padding:0 14px"><div class="st-row" style="padding:9px 0"><div class="l"><b>Уровень защиты</b></div><div style="flex:1;max-width:220px;height:8px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:${pct >= 90 ? '#3ddc84' : pct >= 70 ? '#ffc43c' : '#ff6b6b'}"></i></div><b>${pct}%</b></div></div>
+          <div class="st-card">${r.checks.map((c) => row((c.ok ? '✅ ' : '⚠ ') + esc(c.label), esc(c.note), '')).join('')}</div>
+          <div class="actions"><button class="abtn on" id="hspRe">🔄 Проверить ещё раз</button></div>
+          <div class="st-msg" style="color:var(--muted)">Приложение не собирает ваши запросы и не отправляет ничего, кроме Discord ID, имени, версии и времени захода (см. README).</div>`;
+        hb.querySelector('#hspRe').onclick = paint;
+      };
+      paint();
+    }
     const ss = box.querySelector('#stSrv'); if (ss) ss.onclick = () => window.PHX_online && window.PHX_online.openServers();
     const nt = box.querySelector('#stNt'); if (nt) nt.onclick = () => ov.notifyTest && ov.notifyTest();
     const bk = box.querySelector('#stBak'); if (bk) bk.onclick = () => { if (window.PHX_tools && window.PHX_tools.openBackup) window.PHX_tools.openBackup(); };

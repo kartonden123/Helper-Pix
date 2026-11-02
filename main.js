@@ -3,6 +3,13 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const auth = require('./auth');
+// Защита IPC: команды принимаются только от страниц самого приложения (file://), а не от чужого содержимого
+{
+  const trusted = (e) => { try { return /^file:\/\//.test(e.senderFrame.url); } catch (_) { return false; } };
+  const _handle = ipcMain.handle.bind(ipcMain), _on = ipcMain.on.bind(ipcMain);
+  ipcMain.handle = (ch, fn) => _handle(ch, (e, ...a) => (trusted(e) ? fn(e, ...a) : { error: 'forbidden' }));
+  ipcMain.on = (ch, fn) => _on(ch, (e, ...a) => { if (trusted(e)) fn(e, ...a); else if (ch === 'ls-load') e.returnValue = {}; });
+}
 
 const APP_NAME = 'Polix Helper';
 const STATS_URL = 'https://polix-helper-stats.kartonden123.workers.dev';   // сервер статистики (Cloudflare Worker)
@@ -121,6 +128,9 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
       backgroundThrottling: false   // скрытое окно не «засыпает», поэтому открывается без задержки
     }
   });
@@ -128,6 +138,10 @@ function createWindow() {
   win.setOpacity(OPACITY);
   loadContent();
 
+  // окно не открывает чужие страницы и никуда не уходит с файлов приложения
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (e, url) => { if (!/^file:\/\//.test(url)) e.preventDefault(); });
+  win.webContents.session.setPermissionRequestHandler((_wc, perm, cb) => cb(['media', 'display-capture', 'clipboard-sanitized-write'].includes(perm)));
   win.webContents.on('did-fail-load', (_e, code, desc) => log(`did-fail-load ${code} ${desc}`));
   win.once('ready-to-show', () => { if (STARTED_HIDDEN && auth.get().ok) { visible = false; updateTrayMenu(); } else { win.show(); visible = true; } });
   if (DEBUG) win.webContents.openDevTools({ mode: 'detach' });
@@ -289,6 +303,8 @@ async function loadServers(force) {
   })();
   return srvBusy;
 }
+const protect = require('./protect');
+ipcMain.handle('protect-status', () => protect.status(win));
 ipcMain.handle('server-online', (_e, force) => loadServers(!!force));
 setInterval(() => { if (auth.get().ok) loadServers(true); }, 120000);
 // копия настроек интерфейса (ph_*): localStorage Chromium пишет на диск с задержкой и может потерять запись при выходе
@@ -298,7 +314,7 @@ let lsTimer = null;
 const lsFlush = () => { clearTimeout(lsTimer); lsTimer = null; try { fs.writeFileSync(LS_FILE, JSON.stringify(lsMem)); } catch (e) {} };
 ipcMain.on('ls-set', (_e, k, v) => {
   if (typeof k !== 'string' || !/^ph_[A-Za-z0-9_]+$/.test(k)) return;
-  if (v === null) delete lsMem[k]; else lsMem[k] = String(v).slice(0, 300000);
+  if (v === null) delete lsMem[k]; else if (k in lsMem || Object.keys(lsMem).length < 400) lsMem[k] = String(v).slice(0, 300000);
   if (!lsTimer) lsTimer = setTimeout(lsFlush, 300);
 });
 ipcMain.on('ls-load', (e) => { e.returnValue = lsMem; });
