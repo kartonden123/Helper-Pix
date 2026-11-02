@@ -87,6 +87,7 @@ mark{background:rgba(var(--acc-rgb),.28);color:#fff;border-radius:3px;padding:0 
 .dot.on{background:#3ddc84;box-shadow:0 0 8px #3ddc84}
 .adm-row small{color:var(--muted);font-size:11.5px;white-space:nowrap}
 .foot{padding:8px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);display:flex;gap:14px}
+html.noanim *{animation-duration:0s!important;animation-delay:0s!important}
 @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes uiIn{from{opacity:0}to{opacity:1}}
@@ -304,7 +305,7 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Backspace'&&view!=='home'&&document.activeElement!==q){goBack();}
 });
-if(window.overlay&&window.overlay.onShow)window.overlay.onShow(()=>{/* окно раскрывается там, где его свернули (или на главной, если так выбрано в настройках) */if(window.PH_OPENHOME){view='home';sel=0;q.value='';render();}const ui=$('#ui');ui.style.animation='none';ui.offsetHeight;ui.style.animation='';q.focus();if(view==='home')q.select();requestAnimationFrame(()=>requestAnimationFrame(()=>{if(window.overlay.ready)window.overlay.ready();}));});
+if(window.overlay&&window.overlay.onShow)window.overlay.onShow(()=>{/* окно раскрывается там, где его свернули (или на главной, если так выбрано в настройках) */const ui=$('#ui');document.documentElement.classList.add('noanim');ui.style.transition='none';ui.style.opacity='0';if(window.PH_OPENHOME){view='home';sel=0;q.value='';render();}ui.offsetHeight;ui.style.transition='opacity .2s ease-out';ui.style.opacity='1';setTimeout(()=>document.documentElement.classList.remove('noanim'),900);q.focus();if(view==='home')q.select();requestAnimationFrame(()=>requestAnimationFrame(()=>{if(window.overlay.ready)window.overlay.ready();}));});
 
 /* окно подгоняется под размер меню, поэтому пустого прозрачного места нет */
 document.documentElement.style.setProperty('--maxh',Math.round(screen.availHeight*0.55)+'px');

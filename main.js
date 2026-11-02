@@ -187,7 +187,7 @@ function showWin() {
   applyProtection();
   win.show(); win.focus(); win.webContents.focus(); visible = true;
   win.webContents.send('ov-show');
-  if (!was) setTimeout(() => { if (win && !win.isDestroyed()) win.setOpacity(1); }, 120);
+  if (!was) setTimeout(() => { if (win && !win.isDestroyed()) win.setOpacity(1); }, 50);
   updateTrayMenu();
 }
 function hideWin() {
