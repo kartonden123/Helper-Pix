@@ -450,7 +450,7 @@ async function refreshMe() {
     if (r.ok) {
       const d = await r.json();
       if (Date.now() - lastPushAt < 90000) return;   // свежие данные из мгновенного канала важнее задержанного ответа KV
-      const nm = { roles: d.roles || [], premium: !!d.premium, tier: d.tier || (d.premium ? 'premium' : ''), role: d.role || '', banned: !!d.banned, announce: d.announce || null };
+      const nm = { roles: d.roles || [], premium: !!d.premium, tier: d.tier || (d.premium ? 'premium' : ''), premSource: d.premSource || '', premUntil: d.premUntil || 0, role: d.role || '', banned: !!d.banned, announce: d.announce || null };
       if (meKnown) diffMe(me, nm, !!d.admin);
       meKnown = true; me = nm;
       try { fs.writeFileSync(PREMIUM_FILE(), JSON.stringify(me)); } catch (e) {}
@@ -489,7 +489,7 @@ function connectWs() {
       if (m.m.uid !== myId && !(win && win.isVisible())) showToast(m.m.name, m.m.text, 'chat');
     }
     else if (m.t === 'del') { chatHist = chatHist.filter((x) => x.id !== m.id); if (win && !win.isDestroyed()) win.webContents.send('chat', m); }
-    else if (m.t === 'user' && m.id === myId) applyPatch({ role: m.role || '', roles: m.roles || [], tier: m.tier || '', premium: !!m.premium, banned: !!m.banned });
+    else if (m.t === 'user' && m.id === myId) applyPatch({ role: m.role || '', roles: m.roles || [], tier: m.tier || '', premium: !!m.premium, premSource: m.premSource || '', premUntil: m.premUntil || 0, banned: !!m.banned });
     else if (m.t === 'announce') applyPatch({ announce: m.a || null });
     else if (m.t === 'err' && win && !win.isDestroyed()) win.webContents.send('chat', m);
   });
@@ -504,13 +504,13 @@ ipcMain.handle('auth-state', async (_e, fast) => {
   if (!fast) await refreshMe();
   const s = auth.get();
   const role = s.ok ? (s.admin ? 'owner' : me.role) : '';
-  return { ...s, role, roles: s.ok ? (s.admin ? ['owner'] : (me.roles || [])) : [], staff: !!role, premium: !!(s.ok && (role || me.premium)), tier: !s.ok ? '' : (s.admin ? 'ultra' : (me.tier || (role || me.premium ? 'premium' : ''))), banned: !!(s.ok && me.banned && !s.admin), announce: s.ok ? me.announce : null };
+  return { ...s, role, roles: s.ok ? (s.admin ? ['owner'] : (me.roles || [])) : [], staff: !!role, premium: !!(s.ok && (role || me.premium)), tier: !s.ok ? '' : (s.admin ? 'ultra' : (me.tier || (role || me.premium ? 'premium' : ''))), banned: !!(s.ok && me.banned && !s.admin), premSource: s.ok ? (me.premSource || '') : '', premUntil: s.ok ? (me.premUntil || 0) : 0, announce: s.ok ? me.announce : null };
 });
 // панель персонала и список «В сети»: права проверяет сервер
 ipcMain.handle('staff-api', async (_e, method, apiPath, body) => {
   const t = auth.token();
   if (!t || !auth.get().ok) return { error: 'Войдите через Discord' };
-  if (!/^\/(staff\/[a-z]+|online)(\?id=\d{5,25})?$/.test(apiPath)) return { error: 'bad path' };
+  if (!/^\/(staff\/[a-z]+|pay\/[a-z]+|online)(\?id=\d{5,25})?$/.test(apiPath)) return { error: 'bad path' };
   try {
     const r = await sfetch(STATS_URL + apiPath, { method: method === 'POST' ? 'POST' : 'GET', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: method === 'POST' ? JSON.stringify(body || {}) : undefined });
     const d = await r.json();

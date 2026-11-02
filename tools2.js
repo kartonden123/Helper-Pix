@@ -80,5 +80,46 @@
     $('#rdP').onclick = () => { const a = $('#rdL').value.split('\n').map((x) => x.trim()).filter(Boolean); out(a.length ? '👉 ' + eh(a[rnd(a.length)]) : 'Добавьте варианты'); };
   }
 
-  window.PHX_tools2 = { pct, counter, stopwatch, numbers, random };
+
+  // ---------- Покупка Premium ----------
+  const PLAN_ORDER = ['week', 'month', 'forever'];
+  const dateRu = (ms) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const SRC = { paid: ['куплен', '#ffc43c'], granted: ['выдан персоналом', '#7cf0c9'], role: ['даёт роль', '#c48bff'] };
+  function premLine(p) {
+    if (!p || !p.source) return '<span style="color:var(--muted)">Premium не активен</span>';
+    const [t, c] = SRC[p.source] || ['', '#ccc'];
+    const until = p.source === 'paid' ? (p.until ? ', действует до <b>' + dateRu(p.until) + '</b>' : ', <b>навсегда</b>') : '';
+    return '<span class="rbadge" style="--c:' + c + '"><i class="rdot"></i>' + (p.tier === 'ultra' ? '💎 Ультра Премиум' : '⭐ Premium') + ' · ' + t + '</span>' + until;
+  }
+  async function premium() {
+    shell('⭐ Premium', '<p class="t">Загрузка…</p>');
+    const api = window.overlay && window.overlay.staffApi; if (!api) return;
+    let busy = false, sel = 'month', timer = null;
+    const draw = async () => {
+      const d = await api('GET', '/pay/info'); const box = $('#pmBox'); if (!box && !$('.det')) return;
+      if (!d || d.error) { $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">' + eh((d && d.error) || 'Ошибка') + '</p>'; return; }
+      const o = d.order, hist = (d.history || []).slice(0, 8);
+      const plans = PLAN_ORDER.map((k) => { const p = d.plans[k]; return '<button class="tl-card pm-plan' + (sel === k ? ' sel' : '') + '" data-p="' + k + '" style="text-align:center;flex:1;min-width:110px"><b style="font-size:20px">' + p.price + ' ₽</b><span>' + p.n + '</span></button>'; }).join('');
+      let order = '';
+      if (o && o.status === 'new') order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>1. Переведите <b>' + o.price + ' ₽</b> на карту <b>' + eh(d.card) + '</b>' + (d.holder ? ' (' + eh(d.holder) + ')' : '') + '<br>2. В комментарии к переводу укажите код <b>' + eh(o.code) + '</b><br>3. Нажмите «Я оплатил». Персонал проверит перевод и выдаст Premium.</div><div class="actions"><button class="abtn" id="pmCopy">📋 Копировать карту</button><button class="abtn on" id="pmClaim">Я оплатил</button></div>';
+      else if (o && o.status === 'claimed') order = '<div class="note" style="margin-top:12px">⏳ Заказ <b>' + eh(o.code) + '</b> ждёт проверки персоналом. Обычно это недолго. Premium появится сам.</div>';
+      else if (o && o.status === 'rejected') order = '<div class="note" style="margin-top:12px;border-color:rgba(255,100,100,.5)">❌ Оплата заказа ' + eh(o.code) + ' отклонена' + (o.reason ? ': ' + eh(o.reason) : '') + '</div>';
+      else if (o && o.status === 'paid') order = '<div class="note" style="margin-top:12px;border-color:rgba(61,220,132,.5)">✅ Оплата подтверждена, спасибо!</div>';
+      const canBuy = d.enabled && !(o && (o.status === 'new' || o.status === 'claimed'));
+      $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">Ваш статус: ' + premLine(d.premium) + '</p>'
+        + '<p class="t">Premium даёт ИИ-помощника и расширенные возможности. Выберите срок:</p><div style="display:flex;gap:8px;flex-wrap:wrap">' + plans + '</div>'
+        + (d.enabled ? (canBuy ? '<div class="actions"><button class="abtn on" id="pmBuy">Купить за ' + d.plans[sel].price + ' ₽</button></div>' : '') : '<p class="t">Приём оплаты пока не включён администратором.</p>')
+        + order
+        + (hist.length ? '<h3 style="margin:16px 0 6px">История</h3>' + hist.map((h) => '<div class="urow" style="grid-template-columns:1fr auto"><span>' + eh(h.text) + '</span><small>' + new Date(h.t).toLocaleDateString('ru-RU') + '</small></div>').join('') : '');
+      $('#bk') && ($('#bk').onclick = () => { clearInterval(timer); goBack(); });
+      document.querySelectorAll('.pm-plan').forEach((b) => (b.onclick = () => { sel = b.dataset.p; draw(); }));
+      const buy = $('#pmBuy'); if (buy) buy.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel }); busy = false; if (r && r.error) alert(r.error); draw(); };
+      const cp = $('#pmCopy'); if (cp) cp.onclick = () => X.copy(String(d.card).replace(/\s/g, ''), cp);
+      const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) alert(r.error); draw(); };
+    };
+    await draw();
+    timer = setInterval(() => { if (!$('.det') || !/Premium/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer); draw(); }, 20000);
+  }
+
+  window.PHX_tools2 = { premium, pct, counter, stopwatch, numbers, random };
 })();

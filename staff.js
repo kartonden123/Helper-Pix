@@ -17,7 +17,14 @@
   const rb = (r) => (r ? `<span class="rbadge" style="--c:${RC[r] || '#ccc'}"><i class="rdot"></i>${RN[r] || esc(r)}</span>` : '');
   const rbs = (u) => ((u.roles && u.roles.length) ? u.roles : [u.role]).filter(Boolean).sort((a, b) => rank(b) - rank(a)).map(rb).join('');
   const tierOf = (u) => u.tier || (u.premium ? 'premium' : '');
-  const pb = (u) => { const t = tierOf(u); return t === 'ultra' && !(RK[u.role] >= 4) ? '<span class="rbadge" style="--c:#5ef0ff">💎 Ультра</span>' : t === 'premium' && !u.role ? '<span class="rbadge" style="--c:#ffc43c">Premium</span>' : ''; };
+  const PS = { paid: ['куплен', '#ffc43c'], granted: ['выдан', '#7cf0c9'] };
+  const pb = (u) => {
+    const t = tierOf(u); if (!t) return '';
+    if (t === 'ultra' && RK[u.role] >= 4) return '';
+    if (t === 'premium' && u.role) return '';
+    const ps = PS[u.premSource], until = u.premSource === 'paid' ? (u.premUntil ? ' до ' + new Date(u.premUntil).toLocaleDateString('ru-RU') : ' · навсегда') : '';
+    return '<span class="rbadge" style="--c:' + (ps ? ps[1] : '#ffc43c') + '"><i class="rdot"></i>' + (t === 'ultra' ? '💎 Ультра' : '⭐ Premium') + (ps ? ' · ' + ps[0] + until : '') + '</span>';
+  };
 
   const css = document.createElement('style');
   css.textContent = `
@@ -33,6 +40,8 @@
   .rop:disabled{opacity:.35;cursor:not-allowed}
   .rop .ck{margin-left:5px;font-weight:800}
   .rrow{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+  .rhist{grid-column:1/-1;display:none;font-size:12px;padding:6px 4px 2px;color:#cfc8d3}.rhist.open{display:block}
+  .rhist div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-top:1px solid rgba(255,255,255,.05)}.rhist small{color:var(--muted);white-space:nowrap}
   .urow:nth-child(odd){background:rgba(255,255,255,.04)}
   .urow small{color:var(--muted);font-size:11.5px}
   .uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
@@ -99,9 +108,9 @@
     const staff = u.role !== '';
     const premBtn = mine >= 3 && !staff ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}"><option value="0"${tierOf(u) === '' ? ' selected' : ''}>Без Premium</option><option value="1"${tierOf(u) === 'premium' ? ' selected' : ''}>⭐ Premium</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
     const roleSel = '';
-    const dpvBtn = mine >= 2 && u.role !== 'owner' ? `<button class="mini" data-a="rp" data-id="${esc(u.id)}">🎭 Роли</button>` : '';
+    const dpvBtn = mine >= 2 && u.role !== 'owner' ? `<button class="mini" data-a="rp" data-id="${esc(u.id)}">🎭 Роли</button><button class="mini" data-a="hist" data-id="${esc(u.id)}" title="История ролей и Premium">🕘</button>` : '';
     const banBtn = mine >= 4 && canEdit(u) ? `<button class="mini${u.banned ? ' bad' : ''}" data-a="ban" data-id="${esc(u.id)}">${u.banned ? '✔ разблок.' : '🚫 блок'}</button>` : '';
-    return `<div class="urow${anim ? ' in' : ''}" data-uid="${esc(u.id)}"><span class="dot${u.online ? ' on' : ''}"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}${u.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}<br><small>${esc(u.id)} · v${esc(u.version || '?')} · ${ago(u.last_seen)}</small></span><div class="uact">${premBtn}${roleSel}${dpvBtn}${banBtn}</div><div class="rpick" data-pk="${esc(u.id)}">${pickerHtml(u)}</div></div>`;
+    return `<div class="urow${anim ? ' in' : ''}" data-uid="${esc(u.id)}"><span class="dot${u.online ? ' on' : ''}"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}${u.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}<br><small>${esc(u.id)} · v${esc(u.version || '?')} · ${ago(u.last_seen)}</small></span><div class="uact">${premBtn}${roleSel}${dpvBtn}${banBtn}</div><div class="rpick" data-pk="${esc(u.id)}">${pickerHtml(u)}</div><div class="rhist" data-hk="${esc(u.id)}"></div></div>`;
   }
 
   async function act(kind, id, extra) {
@@ -142,7 +151,15 @@
   }
   function bindOne(el) {
     const id = el.dataset.id, a = el.dataset.a;
-    if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
+    if (a === 'hist') el.onclick = async () => {
+      const h = list.querySelector('.rhist[data-hk="' + id + '"]'); if (!h) return;
+      if (h.classList.toggle('open')) {
+        h.textContent = 'Загрузка…';
+        const r = await api('GET', '/staff/history?id=' + id);
+        h.innerHTML = !r || r.error ? esc((r && r.error) || 'Ошибка') : (r.history.length ? r.history.map((e) => '<div><span>' + esc(e.text) + (e.byName ? ' <small>· ' + esc(e.byName) + '</small>' : '') + '</span><small>' + new Date(e.t).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</small></div>').join('') : 'Истории пока нет');
+      }
+    };
+    else if (a === 'rp') el.onclick = () => { const p = list.querySelector('.rpick[data-pk="' + id + '"]'); if (p) p.classList.toggle('open'); };
     else if (a === 'role') el.onchange = async () => { await act('role', id, el.value); refreshRow(id); };
     else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); refreshRow(id); };
     else if (a === 'tier') el.onchange = async () => { await act('prem', id, +el.value); refreshRow(id); };
@@ -177,7 +194,7 @@
     view = 'memo'; panel.classList.add('on');
     const mine = rank(S.role);
     list.innerHTML = backBtn() + `<div class="det"><h2>👑 Панель персонала</h2><p class="t">Ваша роль: ${rb(S.role) || 'нет'}</p>
-      <div class="stab"><button class="abtn${tab === 'users' ? ' on' : ''}" data-t="users">👥 Люди</button>${mine >= 2 ? `<button class="abtn${tab === 'id' ? ' on' : ''}" data-t="id">🔑 По Discord ID</button>` : ''}${mine >= 4 ? `<button class="abtn${tab === 'ann' ? ' on' : ''}" data-t="ann">📢 Объявление</button>` : ''}</div>
+      <div class="stab"><button class="abtn${tab === 'users' ? ' on' : ''}" data-t="users">👥 Люди</button>${mine >= 2 ? `<button class="abtn${tab === 'id' ? ' on' : ''}" data-t="id">🔑 По Discord ID</button>` : ''}${mine >= 4 ? `<button class="abtn${tab === 'ann' ? ' on' : ''}" data-t="ann">📢 Объявление</button>${S.role === 'owner' ? `<button class="abtn${tab === 'pay' ? ' on' : ''}" data-t="pay">💳 Оплата</button>` : ''}` : ''}</div>
       <div id="stBody"><p class="t">Загрузка…</p></div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
     list.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => openStaff(b.dataset.t)));
@@ -209,6 +226,10 @@
         $('#stBanOn').onclick = async () => { const id = gid(); if (id) await act('ban', id, true); };
         $('#stBanOff').onclick = async () => { const id = gid(); if (id) await act('ban', id, false); };
       }
+    } else if (tab === 'pay' && S.role === 'owner') {
+      $('#stBody').innerHTML = '<p class="t">Карта, на которую покупатели переводят деньги за Premium. Её увидят только те, кто открыл экран покупки. Заявки на проверку приходят в канал персонала в Discord с кнопками.</p><input class="fld" id="pyCard" placeholder="Номер карты или телефона" maxlength="25"><input class="fld" id="pyName" placeholder="Получатель (имя, по желанию)" maxlength="40" style="margin-top:8px"><div class="stmsg" id="stMsg"></div><div class="actions"><button class="abtn on" id="pySave">Сохранить</button></div>';
+      ['pyCard', 'pyName'].forEach((i) => $('#' + i).addEventListener('keydown', (e) => e.stopPropagation()));
+      $('#pySave').onclick = async () => { const r = await api('POST', '/staff/paycfg', { card: $('#pyCard').value, holder: $('#pyName').value }); say(r && r.ok ? (r.enabled ? 'Сохранено, оплата включена' : 'Сохранено, оплата выключена') : 'Ошибка: ' + ((r && r.error) || 'нет ответа'), !!(r && r.ok)); };
     } else if (tab === 'ann') {
       $('#stBody').innerHTML = `<p class="t">Сообщение увидят все пользователи хелпера в верхней части меню.</p><textarea class="ai-box" id="stAnn" maxlength="300" placeholder="Например: сегодня в 20:00 общий сбор в Discord"></textarea><div class="stmsg" id="stMsg"></div>
         <div class="actions"><button class="abtn on" id="stAnnGo">📢 Опубликовать</button><button class="abtn" id="stAnnOff">Убрать объявление</button></div>`;
