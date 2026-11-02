@@ -27,43 +27,55 @@
   /* ---- подбор контекста из базы ---- */
   const STOP = new Set(['что', 'как', 'какой', 'какая', 'какие', 'какое', 'можно', 'нужно', 'если', 'или', 'для', 'при', 'про', 'это', 'ли', 'где', 'когда', 'кто', 'мне', 'его', 'они', 'есть', 'быть', 'статья', 'статье', 'статьи', 'сколько', 'будет', 'тоже', 'чтобы', 'можно', 'ещё', 'еще', 'так', 'там', 'тут']);
   const stem = (w) => (w.length >= 5 ? w.slice(0, w.length - 2) : w);
+  // близкие по смыслу слова: вопрос «арестовать» должен найти статьи про задержание
+  const SYN = { арест: ['задерж', 'задержан'], задерж: ['арест'], убийств: ['убий', 'смерт'], убить: ['убий', 'убийств'], стрельб: ['огнестрел', 'оруж'], пушк: ['оруж', 'огнестрел'], ствол: ['оруж', 'огнестрел'], оруж: ['огнестрел', 'лиценз'], машин: ['транспорт', 'автомоб'], тачк: ['транспорт', 'автомоб'], скорост: ['превышен'], штраф: ['взыскан'], тюрьм: ['лишен', 'заключен'], срок: ['лишен', 'заключен'], ограблен: ['хищен', 'кража'], воров: ['кража', 'хищен'], взятк: ['коррупц'], адвокат: ['защитник'], прокурор: ['прокуратур'], судимост: ['судим'], обыск: ['досмотр'], досмотр: ['обыск'], наручник: ['задерж', 'принужден'], миранд: ['права'], заложник: ['захват'], наркот: ['нарко', 'запрещ'], нарко: ['наркот'] };
   function tokens(q) { return norm(q).replace(/[^а-яa-z0-9. ]/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !STOP.has(w)).map(stem); }
+  function expand(tk) { const out = new Set(tk); tk.forEach((t) => { for (const k of Object.keys(SYN)) if (t.startsWith(k.slice(0, Math.min(k.length, 5)))) SYN[k].forEach((s) => out.add(s)); }); return [...out]; }
+  let prevQ = '';
   function buildContext(q) {
-    const tk = tokens(q); const qn = norm(q);
+    let tk = tokens(q); const qn = norm(q);
+    if (tk.length < 3 && prevQ) tk = [...new Set([...tk, ...tokens(prevQ)])];   // короткий уточняющий вопрос продолжает предыдущий
+    tk = expand(tk);
     const arts = IDX.map((e) => {
       let s = 0;
       for (const t of tk) { if (e.title.includes(t)) s += 3; else if (e.text.includes(t)) s += 1; }
       const m = qn.match(/\d+(?:\.\d+)+/g) || []; if (m.includes(e.code)) s += 10;
       return { a: e.a, s };
-    }).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 5);
-    const need = Math.max(1, Math.ceil(tk.length * 0.5));
+    }).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 7);
+    const need = Math.max(1, Math.ceil(tk.length * 0.4));
     const paras = ENT.map((e) => { let s = 0; for (const t of tk) if (e.n.includes(t)) s++; return { e, s }; })
-      .filter((x) => x.s >= need).sort((x, y) => y.s - x.s || x.e.p.length - y.e.p.length).slice(0, 8);
+      .filter((x) => x.s >= need).sort((x, y) => y.s - x.s || x.e.p.length - y.e.p.length).slice(0, 12);
     let ctx = '';
     arts.forEach(({ a }) => { ctx += `Статья ${shortCode(a)} (${a.doc}): ${a.title || a.codeTitle || ''}. Розыск: ${a.wanted || '—'}; тюрьма: ${a.prison ? a.prison + ' мес.' : '—'}; штраф: ${a.fine ? '$' + String(a.fine).replace(/\D/g, '') : '—'}; судимость: ${a.record ? 'да' : 'нет'}. ${String(a.text || '').slice(0, 350)}\n\n`; });
     paras.forEach(({ e }) => { ctx += `[${e.d.name}] ${e.p.slice(0, 520)}\n\n`; });
-    return { ctx: ctx.slice(0, 6800), arts: arts.map((x) => x.a), count: arts.length + paras.length };
+    return { ctx: ctx.slice(0, 9500), arts: arts.map((x) => x.a), count: arts.length + paras.length };
   }
 
   /* ---- окно ИИ ---- */
   let busy = false;
+  const hist = [];   // последние вопросы и ответы диалога: ИИ учитывает их в следующем вопросе
+  const MODES = [['quick', 'Кратко'], ['normal', 'Обычно'], ['detail', 'Подробно']];
   function openAI(prefill) {
     if (!window.PH.premium) return window.PHX.gate('ИИ-помощник', 'ИИ знает кодексы, законы и правила Majestic. Доступен с Premium: 5 вопросов в день, с Ультра Премиум 10.');
     view = 'memo'; panel.classList.add('on');
     list.innerHTML = backBtn() + `<div class="det"><h2>🤖 Спросить ИИ</h2><p class="t">Задайте вопрос по кодексам, законам и уставам. ИИ ответит на основе базы хелпера.</p>
       <textarea class="ai-box" id="aiQ" maxlength="500" placeholder="Например: «можно ли задержать неприкосновенного человека за убийство?»">${esc(prefill || '')}</textarea>
-      <div class="ai-meta"><span id="aiLeft">Осталось сегодня: …</span><button class="abtn on" id="aiGo">Спросить (Ctrl+Enter)</button></div>
+      <div class="ai-meta"><span class="seg" id="aiMode" style="display:flex">${MODES.map(([k, n]) => `<button data-m="${k}" class="${(X.LS ? X.LS.get('ph_aiMode', 'normal') : 'normal') === k ? 'on' : ''}">${n}</button>`).join('')}</span><span id="aiLeft">Осталось сегодня: …</span></div>
+      <div class="ai-meta" style="margin-top:-4px"><span>${hist.length ? '💬 Диалог продолжается: ИИ помнит ' + hist.length + ' посл. вопр.' : 'Новый диалог'}</span><span><button class="abtn" id="aiNew"${hist.length ? '' : ' style="display:none"'}>Новый диалог</button> <button class="abtn on" id="aiGo">Спросить (Ctrl+Enter)</button></span></div>
       <div id="aiOut"></div><div class="ai-warn">ИИ может ошибаться. Проверяйте статьи по ссылкам под ответом.</div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
     const box = $('#aiQ'); box.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.ctrlKey && e.key === 'Enter') ask(); });
     $('#aiGo').onclick = ask; box.focus();
+    list.querySelectorAll('#aiMode button').forEach((b) => (b.onclick = () => { if (X.LS) X.LS.set('ph_aiMode', b.dataset.m); list.querySelectorAll('#aiMode button').forEach((x) => x.classList.toggle('on', x === b)); }));
+    const nb = $('#aiNew'); if (nb) nb.onclick = () => { hist.length = 0; prevQ = ''; openAI(''); };
     window.overlay.aiLeft().then((r) => { if (r && r.limit && $('#aiLeft')) $('#aiLeft').textContent = r.limit > 1000 ? 'Без ограничений' : `Осталось сегодня: ${r.remaining} из ${r.limit}`; });
   }
   async function ask() {
     if (busy) return; const qv = $('#aiQ').value.trim(); if (qv.length < 3) return;
     busy = true; $('#aiGo').disabled = true; const out = $('#aiOut'); out.innerHTML = '<div class="ai-ans"><span class="dots"><i></i><i></i><i></i></span> Думаю…</div>';
     const { ctx, arts } = buildContext(qv);
-    const r = await window.overlay.aiAsk(qv, ctx || 'Подходящих статей в базе не найдено.');
+    const r = await window.overlay.aiAsk(qv, ctx || 'Подходящих статей в базе не найдено.', { mode: X.LS ? X.LS.get('ph_aiMode', 'normal') : 'normal', history: hist.slice(-3) });
+    if (r && r.answer) { hist.push({ q: qv, a: r.answer }); while (hist.length > 3) hist.shift(); prevQ = qv; }
     busy = false; if ($('#aiGo')) $('#aiGo').disabled = false;
     if (!$('#aiOut')) return;
     if (r && r.answer) {

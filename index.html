@@ -217,8 +217,9 @@ function render(){
   $('#cnt').textContent=results.length?`${results.length} статей`:'';
 }
 function backBtn(){return '<button class="back" id="bk">← назад (Esc)</button>';}
+function bumpStat(k){try{const L=window.PHX&&window.PHX.LS;if(!L)return;const s=L.get('ph_stats',{open:0,search:0});s[k]=(s[k]||0)+1;L.set('ph_stats',s);}catch(e){}}
 function openArt(a){
-  view='art';
+  view='art';bumpStat('open');
   const note=a.doc==='УК'?(a.record?'<div class="note r">Судимость: да. Розыск 4 и выше даёт запись о судимости.</div>':`<div class="note">Судимость: нет (розыск ${a.wanted||'—'}).</div>`):'';
   const imm=IMMUNE_ARTS.includes(a.code)?'<div class="note s">🛡 По этой статье неприкосновенность снимается: лицо можно задержать.</div>':'';
   panel.classList.add('on');
@@ -326,4 +327,5 @@ if(window.overlay&&window.overlay.resize){
 <script src="memo.js"></script>
 <script src="look.js"></script>
 <script src="settings.js"></script>
+<script src="online.js"></script>
 </body></html>

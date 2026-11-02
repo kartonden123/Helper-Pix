@@ -98,6 +98,41 @@
   }
 
   /* ---------- центр инструментов ---------- */
+  // срок давности по АК 4.4: 7 дней с момента правонарушения
+  function openLimit() {
+    view = 'memo'; panel.classList.add('on');
+    const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    list.innerHTML = backBtn() + `<div class="det"><h2>⏳ Срок давности</h2><p class="t">Административное правонарушение: через 7 дней человека уже нельзя привлечь (АК 4.4). Укажите, когда оно было.</p>
+      <input class="fld" id="lmD" type="datetime-local" value="${now}" style="max-width:260px"><div class="note" id="lmR" style="margin-top:12px"></div></div>`;
+    $('#bk').onclick = goBack; $('#cnt').textContent = '';
+    const calc = () => {
+      const t = new Date($('#lmD').value).getTime(); if (!t) return; const end = t + 7 * 86400000, left = end - Date.now();
+      const d = Math.floor(left / 86400000), h = Math.floor(left % 86400000 / 3600000), m = Math.floor(left % 3600000 / 60000);
+      $('#lmR').innerHTML = left > 0 ? `Осталось: <b>${d} дн. ${h} ч. ${m} мин.</b><br>Привлечь можно до ${new Date(end).toLocaleString('ru-RU')}.` : `<b style="color:#ff9d9d">Срок истёк</b> ${new Date(end).toLocaleString('ru-RU')}. Привлечение невозможно.`;
+    };
+    $('#lmD').addEventListener('keydown', (e) => e.stopPropagation()); $('#lmD').oninput = calc; calc();
+  }
+  // личная статистика: сколько раз искали и открывали статьи (хранится только на этом ПК)
+  function openStats() {
+    view = 'memo'; panel.classList.add('on');
+    const fav = (LS.get('ph_fav', []) || []).length, cs = (LS.get('ph_case', []) || []).length, hs = (LS.get('ph_hist', []) || []).length, tp = (LS.get('ph_tpl', []) || []).length;
+    const st = LS.get('ph_stats', { open: 0, search: 0 });
+    list.innerHTML = backBtn() + `<div class="det"><h2>📊 Моя статистика</h2><div class="stats"><div><small>Избранное</small><b>${fav}</b></div><div><small>В деле</small><b>${cs}</b></div><div><small>Недавних</small><b>${hs}</b></div><div><small>Шаблонов</small><b>${tp}</b></div></div>
+      <p class="t" style="margin-top:12px">Открыто статей: <b>${st.open || 0}</b> · поисков: <b>${st.search || 0}</b>. Данные хранятся только на вашем компьютере.</p></div>`;
+    $('#bk').onclick = goBack; $('#cnt').textContent = '';
+  }
+  function openClock() {
+    view = 'memo'; panel.classList.add('on');
+    list.innerHTML = backBtn() + `<div class="det"><h2>🕒 Часы</h2><div id="clk" style="font-size:15px;line-height:2"></div><p class="t">«Ночь» по административному кодексу: с 22:00 до 08:00 (громкая музыка и крики запрещены).</p></div>`;
+    $('#bk').onclick = goBack; $('#cnt').textContent = '';
+    const row = (n, tz) => { const t = new Date().toLocaleTimeString('ru-RU', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' }); return `<div>${n}: <b style="font-variant-numeric:tabular-nums">${t}</b></div>`; };
+    const tick = () => {
+      const el = $('#clk'); if (!el) return clearInterval(id);
+      const h = +new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', hour12: false });
+      el.innerHTML = row('Москва', 'Europe/Moscow') + row('Киев', 'Europe/Kyiv') + row('Екатеринбург', 'Asia/Yekaterinburg') + row('UTC', 'UTC') + `<div style="margin-top:8px">Сейчас по Москве: <b>${h >= 22 || h < 8 ? '🌙 ночь, тишина обязательна' : '☀ день'}</b></div>`;
+    };
+    const id = setInterval(tick, 1000); tick();
+  }
   function openTools() {
     view = 'memo'; panel.classList.add('on');
     list.innerHTML = backBtn() + `<div class="det"><h2>🧰 Инструменты</h2><p class="t">Всё, что нужно под рукой во время игры.</p><div class="tl-grid">
@@ -107,9 +142,14 @@
       <button class="tl-card" data-t="rnd"><b>🎲 Случайная статья</b><span>Повторить и проверить себя</span></button>
       <button class="tl-card" data-t="calc"><b>🧮 Калькулятор</b><span>Введите в поиске пример, например 15000*3</span></button>
       <button class="tl-card" data-t="bak"><b>💾 Экспорт и импорт</b><span>Перенос данных на другой ПК (Premium)</span></button>
+      <button class="tl-card" data-t="srv"><b>🌐 Онлайн серверов</b><span>Las Vegas и остальные: игроки, очередь, график</span></button>
+      <button class="tl-card" data-t="lim"><b>⏳ Срок давности</b><span>Сколько осталось привлечь по АК (7 дней)</span></button>
+      <button class="tl-card" data-t="stat"><b>📊 Моя статистика</b><span>Избранное, дела, открытые статьи</span></button>
+      <button class="tl-card" data-t="bug"><b>🐞 Сообщить об ошибке</b><span>Открыть страницу обращений на GitHub</span></button>
+      <button class="tl-card" data-t="clk"><b>🕒 Часы</b><span>Московское время, UTC и ночь по закону (22:00–08:00)</span></button>
     </div></div>`;
     $('#bk').onclick = goBack; $('#cnt').textContent = '';
-    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
+    list.querySelectorAll('.tl-card').forEach((b) => (b.onclick = () => ({ tpl: openTemplates, chk: () => openChecklists(), pad: openPad, rnd: randomArt, bak: openBackup, srv: () => window.PHX_online && window.PHX_online.openServers(), clk: openClock, lim: openLimit, stat: openStats, bug: () => window.overlay && window.overlay.openUrl && window.overlay.openUrl('https://github.com/kartonden123/Helper-Polix/issues/new'), calc: () => { q.value = '15000*3'; view = 'home'; render(); q.focus(); } }[b.dataset.t]())));
   }
 
   /* ---------- 4. Калькулятор прямо в поиске ---------- */

@@ -6,8 +6,9 @@ try {
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^ph_/.test(k) && !(k in m)) ipcRenderer.send('ls-set', k, localStorage.getItem(k)); }
 } catch (e) {}
 contextBridge.exposeInMainWorld('overlay', {
-  version: '2.7.3',
+  version: '2.8.0',
   lsSet: (k, v) => ipcRenderer.send('ls-set', k, v),
+  serverOnline: (force) => ipcRenderer.invoke('server-online', !!force),
   setAutohide: (on) => ipcRenderer.send('ov-autohide', !!on),
   setPref: (k, v) => ipcRenderer.invoke('set-pref', k, v),
   openUrl: (u) => ipcRenderer.send('open-url', u),
@@ -39,7 +40,7 @@ contextBridge.exposeInMainWorld('overlay', {
   onUpdate: (cb) => ipcRenderer.on('update-state', (_e, s) => cb(s)),
   updateState: () => ipcRenderer.invoke('update-state'),
   updateAction: (a) => ipcRenderer.send('update-action', a),
-  aiAsk: (q, c) => ipcRenderer.invoke('ai-ask', q, c),
+  aiAsk: (q, c, o) => ipcRenderer.invoke('ai-ask', q, c, o),
   aiLeft: () => ipcRenderer.invoke('ai-left'),
   staffApi: (method, p, body) => ipcRenderer.invoke('staff-api', method, p, body),
   adminUsers: () => ipcRenderer.invoke('admin-users'),

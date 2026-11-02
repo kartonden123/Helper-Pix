@@ -269,6 +269,28 @@ ipcMain.on('ov-resize', (_e, h) => {
   win.setContentSize(w, Math.min(Math.max(Math.round(h), 80), max));
 });
 ipcMain.on('ov-hide', () => hideWin());
+// онлайн игровых серверов Majestic (публичный адрес, ключ не нужен): кэш на 45 секунд, оповещение о техработах на Las Vegas
+let srvCache = { at: 0, servers: [] }, srvBusy = null, lvTech = null;
+async function loadServers(force) {
+  if (!force && Date.now() - srvCache.at < 45000) return srvCache;
+  if (srvBusy) return srvBusy;
+  srvBusy = (async () => {
+    try {
+      const r = await fetch('https://api.majestic-files.com/meta/servers', { signal: AbortSignal.timeout(12000) });
+      const j = await r.json();
+      const arr = ((j && j.result && j.result.servers) || []).filter((s) => s.project === 'majestic' && s.region === 'ru').map((s) => ({ id: s.id, name: s.name, players: +s.players || 0, queue: +s.queuedPlayers || 0, tech: !!s.techWorks, up: s.status !== false }));
+      if (arr.length) {
+        srvCache = { at: Date.now(), servers: arr };
+        const lv = arr.find((s) => s.id === 'ru9');
+        if (lv) { if (lvTech !== null && lvTech !== lv.tech) notify(lv.tech ? 'Las Vegas: технические работы' : 'Las Vegas снова доступен', lv.tech ? 'Сервер временно недоступен.' : 'Можно заходить в игру.', 'announce'); lvTech = lv.tech; }
+      }
+    } catch (e) { log('servers error ' + e.message); }
+    srvBusy = null; return srvCache;
+  })();
+  return srvBusy;
+}
+ipcMain.handle('server-online', (_e, force) => loadServers(!!force));
+setInterval(() => { if (auth.get().ok) loadServers(true); }, 120000);
 // копия настроек интерфейса (ph_*): localStorage Chromium пишет на диск с задержкой и может потерять запись при выходе
 const LS_FILE = path.join(app.getPath('userData'), 'ls-mirror.json');
 let lsMem = {}; try { lsMem = JSON.parse(fs.readFileSync(LS_FILE, 'utf8')) || {}; } catch (e) {}
@@ -283,12 +305,13 @@ ipcMain.on('ls-load', (e) => { e.returnValue = lsMem; });
 app.on('before-quit', lsFlush);
 ipcMain.on('ov-ready', () => { if (win && !win.isDestroyed()) win.setOpacity(1); });
 // ИИ-помощник: запрос идёт на сервер статистики, там проверяются Discord-аккаунт и дневной лимит
-ipcMain.handle('ai-ask', async (_e, question, context) => {
+ipcMain.handle('ai-ask', async (_e, question, context, opts) => {
+  opts = opts && typeof opts === 'object' ? opts : {};
   const t = auth.token();
   if (!t || !auth.get().ok) return { error: 'auth', message: 'Войдите через Discord, чтобы пользоваться ИИ.' };
   try {
     const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 45000);
-    const r = await sfetch(STATS_URL + '/ai', { method: 'POST', signal: ctl.signal, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context }) });
+    const r = await sfetch(STATS_URL + '/ai', { method: 'POST', signal: ctl.signal, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context, mode: opts.mode, history: Array.isArray(opts.history) ? opts.history.slice(-3) : [] }) });
     clearTimeout(to);
     return await r.json();
   } catch (e) { log('ai error ' + e.message); return { error: 'net', message: 'Нет связи с сервером ИИ. Вопрос не списан.' }; }
@@ -383,6 +406,7 @@ let me = { roles: [], premium: false, tier: '', role: '', banned: false, announc
 try { me = { ...me, ...JSON.parse(fs.readFileSync(PREMIUM_FILE(), 'utf8')) }; } catch (e) {}
 let meKnown = (() => { try { const j = JSON.parse(fs.readFileSync(PREMIUM_FILE(), 'utf8')); return Array.isArray(j.roles) && j.tier !== undefined; } catch (e) { return false; } })();
 const RN_RU = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
+const SPECIAL_RU = [['dpv', 'ДПВ', 'Открыт режим покера (кнопка ♠).'], ['tester', 'Тестер', 'Выдан Premium и ранний доступ к новым функциям.'], ['curator', 'Куратор', 'Роль отображается в списке «В сети».'], ['helper', 'Хелпер', 'Роль отображается в списке «В сети».'], ['media', 'Медиа', 'Роль отображается в списке «В сети».'], ['partner', 'Партнёр', 'Выдан Premium.'], ['vip', 'VIP', 'Выдан Premium.'], ['dev', 'Разработчик', 'Выдан Premium.'], ['legend', 'Легенда', 'Выдан Premium.'], ['event', 'Ивент-мейкер', 'Роль отображается в списке «В сети».'], ['support', 'Поддержка', 'Роль отображается в списке «В сети».']];
 function diffMe(a, b, isOwner) {
   if (isOwner) { if (b.announce && (!a.announce || a.announce.id !== b.announce.id)) { /* свои объявления не показываем */ } return; }
   if (a.role !== b.role) {
@@ -394,9 +418,11 @@ function diffMe(a, b, isOwner) {
     else if (b.tier === 'premium') notify(a.tier === 'ultra' ? 'Ультра Премиум снят' : 'Вам выдан Premium', a.tier === 'ultra' ? 'Остался обычный Premium.' : 'Открыты калькулятор дела, избранное, заметки, таймеры и настройки.', 'premium');
     else notify(a.tier === 'ultra' ? 'Ультра Премиум снят' : 'Premium снят', 'Дополнительные функции отключены.', 'premium');
   }
-  const ap = (a.roles || []).includes('dpv'), bp = (b.roles || []).includes('dpv');
-  if (!ap && bp) notify('Вам выдана роль ДПВ', 'Открыт режим покера (кнопка ♠).', 'role');
-  if (ap && !bp) notify('Роль ДПВ снята', 'Режим покера отключён.', 'role');
+  for (const [k, name, perk] of SPECIAL_RU) {
+    const ap = (a.roles || []).includes(k), bp = (b.roles || []).includes(k);
+    if (!ap && bp) notify('Вам выдана роль «' + name + '»', perk, 'role');
+    if (ap && !bp) notify('Роль «' + name + '» снята', 'Связанные возможности отключены.', 'role');
+  }
   if (!a.banned && b.banned) notify('Доступ ограничен', 'Администратор заблокировал вам доступ к хелперу.', 'ban');
   if (a.banned && !b.banned) notify('Доступ восстановлен', 'Блокировка снята.', 'ban');
   if (b.announce && b.announce.text && (!a.announce || a.announce.id !== b.announce.id)) notify('Объявление', b.announce.text, 'announce');

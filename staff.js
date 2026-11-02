@@ -6,9 +6,13 @@
   if (!S || !X || !(window.overlay && window.overlay.staffApi)) return;
   const $ = (s) => document.querySelector(s);
   const { LS } = X;
-  const RN = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор', dpv: 'ДПВ' };
+  // особые роли: ключ, значок, название, цвет, что даёт
+  const SP = [['dpv', '♠', 'ДПВ', '#3ddc84', 'режим покера'], ['tester', '🧪', 'Тестер', '#7cf0c9', 'Premium'], ['curator', '📚', 'Куратор', '#c48bff', ''], ['helper', '🤝', 'Хелпер', '#6bd5ff', ''], ['media', '🎬', 'Медиа', '#ff7ad9', ''], ['partner', '🏷', 'Партнёр', '#ffb84d', 'Premium'], ['vip', '👑', 'VIP', '#ffe066', 'Premium'], ['dev', '🛠', 'Разработчик', '#9bff6b', 'Premium'], ['legend', '🏆', 'Легенда', '#ff9f5a', 'Premium'], ['event', '🎉', 'Ивент-мейкер', '#ff6b9d', ''], ['support', '💬', 'Поддержка', '#5ef0ff', '']];
+  const RN = { owner: 'Главный Администратор', admin: 'Зам. Администратор', jr: 'Мл. Администратор', smod: 'Ст. Модератор', mod: 'Модератор' };
   const RK = { owner: 5, admin: 4, jr: 3, smod: 2, mod: 1 };
-  const RC = { owner: '#ff2d55', admin: '#ff8a3d', jr: '#ffd34d', smod: '#b387ff', mod: '#6bb7ff', dpv: '#3ddc84' };
+  const RC = { owner: '#ff2d55', admin: '#ff8a3d', jr: '#ffd34d', smod: '#b387ff', mod: '#6bb7ff' };
+  SP.forEach(([k, ic, n, c]) => { RN[k] = ic + ' ' + n; RC[k] = c; });
+  const spOptions = (u) => '<option value="">＋ Особая роль…</option>' + SP.map(([k, ic, n, , perk]) => { const has = (u.roles || []).includes(k); return `<option value="${k}">${has ? '✔ снять' : 'выдать'}: ${ic} ${n}${perk ? ' (' + perk + ')' : ''}</option>`; }).join('');
   const rank = (r) => RK[r] || 0;
   const rb = (r) => (r ? `<span class="rbadge" style="--c:${RC[r] || '#ccc'}">${RN[r] || esc(r)}</span>` : '');
   const rbs = (u) => ((u.roles && u.roles.length) ? u.roles : [u.role]).filter(Boolean).sort((a, b) => rank(b) - rank(a)).map(rb).join('');
@@ -71,8 +75,7 @@
     const staff = u.role !== '';
     const premBtn = mine >= 3 && !staff ? `<select class="mini" data-a="tier" data-id="${esc(u.id)}"><option value="0"${tierOf(u) === '' ? ' selected' : ''}>Без Premium</option><option value="1"${tierOf(u) === 'premium' ? ' selected' : ''}>⭐ Premium</option>${mine >= 4 ? `<option value="2"${tierOf(u) === 'ultra' ? ' selected' : ''}>💎 Ультра</option>` : ''}</select>` : '';
     const roleSel = mine >= 4 && canEdit(u) ? `<select class="mini" data-a="role" data-id="${esc(u.id)}">${roleOptions(u.role, u)}</select>` : '';
-    const hasP = (u.roles || []).includes('dpv');
-    const dpvBtn = mine >= 4 ? `<button class="mini${hasP ? ' on' : ''}" data-a="dpv" data-id="${esc(u.id)}">${hasP ? '♠ ДПВ снять' : '♠ ДПВ'}</button>` : '';
+    const dpvBtn = mine >= 4 ? `<select class="mini" data-a="sp" data-id="${esc(u.id)}">${spOptions(u)}</select>` : '';
     const banBtn = mine >= 4 && canEdit(u) ? `<button class="mini${u.banned ? ' bad' : ''}" data-a="ban" data-id="${esc(u.id)}">${u.banned ? '✔ разблок.' : '🚫 блок'}</button>` : '';
     return `<div class="urow" data-uid="${esc(u.id)}"><span class="dot${u.online ? ' on' : ''}"></span><span>${esc(u.name)}${rbs(u)}${pb(u)}${u.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}<br><small>${esc(u.id)} · v${esc(u.version || '?')} · ${ago(u.last_seen)}</small></span><div class="uact">${premBtn}${roleSel}${dpvBtn}${banBtn}</div></div>`;
   }
@@ -81,16 +84,16 @@
     let path, body;
     if (kind === 'prem') { path = '/staff/premium'; body = { id, tier: extra }; }
     else if (kind === 'role') { path = '/staff/role'; body = { id, role: extra }; }
-    else if (kind === 'dpv') { path = '/staff/role'; body = { id, role: 'dpv', on: extra }; }
+    else if (kind === 'sp') { path = '/staff/role'; body = { id, role: extra.role, on: extra.on }; }
     else { path = '/staff/ban'; body = { id, on: extra }; }
     say('Отправляю…', true);
     const r = await api('POST', path, body);
     if (!r || r.error) { say('Ошибка: ' + ((r && r.error) || 'нет ответа от сервера'), false); return null; }
-    say(kind === 'prem' ? (r.tier === 'ultra' ? 'Ультра Премиум выдан: ' : r.premium ? 'Premium выдан: ' : 'Premium снят: ') + id : kind === 'dpv' ? (extra ? 'Роль ДПВ выдана: ' : 'Роль ДПВ снята: ') + id : kind === 'role' ? (r.role ? 'Роль «' + RN[r.role] + '» назначена: ' : 'Роль снята: ') + id : (r.banned ? 'Заблокирован: ' : 'Разблокирован: ') + id, true);
+    say(kind === 'prem' ? (r.tier === 'ultra' ? 'Ультра Премиум выдан: ' : r.premium ? 'Premium выдан: ' : 'Premium снят: ') + id : kind === 'sp' ? 'Роль «' + (RN[extra.role] || extra.role) + (extra.on ? '» выдана: ' : '» снята: ') + id : kind === 'role' ? (r.role ? 'Роль «' + RN[r.role] + '» назначена: ' : 'Роль снята: ') + id : (r.banned ? 'Заблокирован: ' : 'Разблокирован: ') + id, true);
     // сразу обновляем строку локально: список на сервере обновляется с задержкой до минуты
     if (cache) {
       const u = cache.users.find((x) => x.id === id);
-      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; } else if (kind === 'dpv') { u.roles = r.roles; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
+      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; } else if (kind === 'sp') { u.roles = r.roles; u.tier = (r.roles || []).some((x) => ['tester', 'partner', 'vip', 'dev', 'legend'].includes(x)) && !u.tier ? 'premium' : u.tier; u.premium = !!u.tier; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
     }
     return r;
   }
@@ -99,7 +102,7 @@
     list.querySelectorAll('[data-a]').forEach((el) => {
       const id = el.dataset.id, a = el.dataset.a;
       if (a === 'role') el.onchange = async () => { await act('role', id, el.value); drawUsers(); };
-      else if (a === 'dpv') el.onclick = async () => { const u = cache.users.find((x) => x.id === id); if (!u) return; await act('dpv', id, !(u.roles || []).includes('dpv')); drawUsers(); };
+      else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); drawUsers(); };
       else if (a === 'tier') el.onchange = async () => { await act('prem', id, +el.value); drawUsers(); };
       else el.onclick = async () => {
         const u = cache.users.find((x) => x.id === id); if (!u) return;
@@ -134,7 +137,8 @@
       });
     } else if (tab === 'id') {
       $('#stBody').innerHTML = `<input class="fld" id="stId" placeholder="Discord ID человека (ПКМ по нему → Копировать ID)"><div class="stmsg" id="stMsg"></div><div id="stInfo"></div>
-        <div class="actions"><button class="abtn" id="stLook">🔎 Проверить</button><button class="abtn on" id="stPOn">⭐ Premium</button>${mine >= 4 ? '<button class="abtn on" id="stUOn">💎 Ультра Премиум</button>' : ''}<button class="abtn" id="stPOff">Снять</button>${mine >= 4 ? '<button class="abtn" id="stDOn">♠ ДПВ</button><button class="abtn" id="stDOff">Снять ДПВ</button>' : ''}</div>
+        <div class="actions"><button class="abtn" id="stLook">🔎 Проверить</button><button class="abtn on" id="stPOn">⭐ Premium</button>${mine >= 4 ? '<button class="abtn on" id="stUOn">💎 Ультра Премиум</button>' : ''}<button class="abtn" id="stPOff">Снять</button></div>
+        ${mine >= 4 ? `<div class="actions"><select class="mini" id="stSp">${SP.map(([k, ic, n, , perk]) => `<option value="${k}">${ic} ${n}${perk ? ' (' + perk + ')' : ''}</option>`).join('')}</select><button class="abtn on" id="stDOn">Выдать особую роль</button><button class="abtn" id="stDOff">Снять</button></div>` : ''}
         ${mine >= 4 ? `<div class="actions"><select class="mini" id="stRole">${roleOptions('', {})}</select><button class="abtn" id="stRoleGo">Назначить роль</button><button class="abtn" id="stBanOn">🚫 Заблокировать</button><button class="abtn" id="stBanOff">Разблокировать</button></div>` : ''}`;
       $('#stId').addEventListener('keydown', (e) => e.stopPropagation());
       const gid = () => { const v = $('#stId').value.trim(); if (!/^\d{5,25}$/.test(v)) { say('Введите Discord ID: только цифры.', false); return null; } return v; };
@@ -146,7 +150,7 @@
         $('#stInfo').innerHTML = `<div class="note">${r.seen ? esc(r.seen.name) : 'Ещё не заходил в хелпер'}${rbs(r)}${pb(r)}${r.banned ? '<span class="rbadge" style="--c:#ff6b6b">заблокирован</span>' : ''}</div>`;
       };
       $('#stPOn').onclick = async () => { const id = gid(); if (id) await act('prem', id, 1); };
-      if (mine >= 4) { $('#stDOn').onclick = async () => { const id = gid(); if (id) await act('dpv', id, true); }; $('#stDOff').onclick = async () => { const id = gid(); if (id) await act('dpv', id, false); }; }
+      if (mine >= 4) { $('#stDOn').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: true }); }; $('#stDOff').onclick = async () => { const id = gid(); if (id) await act('sp', id, { role: $('#stSp').value, on: false }); }; }
       if (mine >= 4) $('#stUOn').onclick = async () => { const id = gid(); if (id) await act('prem', id, 2); };
       $('#stPOff').onclick = async () => { const id = gid(); if (id) await act('prem', id, 0); };
       if (mine >= 4) {

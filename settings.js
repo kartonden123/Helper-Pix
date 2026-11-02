@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+    ['2.8.0', 'Онлайн Las Vegas и всех серверов, 10 новых особых ролей, уставы FIB, Weazel, прокуратуры, настройки не теряются'],
     ['2.7.0', 'Новые настройки (около 40), исправлена ошибка «bad token», список слева больше не висит поверх других экранов'],
     ['2.6.2', 'Меню открывается там, где его свернули'],
     ['2.6.0', 'Новая памятка, обновление в один клик'],
@@ -87,7 +88,7 @@
   const P = '⭐ Premium', U = '💎 Ультра';
 
   let main = {};   // настройки основного процесса
-  const SECTIONS = [['gen', '⚙', 'Общие'], ['look', '🎨', 'Внешний вид'], ['search', '🔎', 'Поиск'], ['notif', '🔔', 'Уведомления'], ['keys', '⌨', 'Клавиши'], ['data', '💾', 'Данные'], ['about', 'ℹ', 'О программе']];
+  const SECTIONS = [['gen', '⚙', 'Общие'], ['look', '🎨', 'Внешний вид'], ['search', '🔎', 'Поиск'], ['online', '🌐', 'Онлайн'], ['notif', '🔔', 'Уведомления'], ['keys', '⌨', 'Клавиши'], ['data', '💾', 'Данные'], ['about', 'ℹ', 'О программе']];
   let cur = 'gen';
 
   function section(id) {
@@ -121,6 +122,12 @@
       row('Подсветка совпадений', '', tg('hl', LS.get('ph_hl', true))) +
       row('Строка «Спросить ИИ» в поиске', 'Появляется при запросе из нескольких слов', tg('aiRow', LS.get('ph_aiRow', true)))) +
       card('История', row('История запросов', 'Последние запросы на главном экране', btn('stClrQ', 'Очистить', 'warn')));
+    if (id === 'online') return card('Онлайн серверов',
+      row('Плашка вверху меню', 'Сколько игроков на вашем сервере', tg('lvPill', LS.get('ph_lvPill', true) !== false)) +
+      row('Мой сервер', 'Его онлайн показывается в плашке', sg('lvSrv', [['ru9', 'Las Vegas'], ['ru1', 'New York'], ['ru7', 'Los Angeles'], ['ru12', 'Boston'], ['ru19', 'Memphis']], LS.get('ph_lvSrv', 'ru9'))) +
+      row('Как часто обновлять', 'Данные берутся с majestic-rp.ru', sg('lvSec', [[30, '30 с'], [60, '1 мин'], [120, '2 мин'], [300, '5 мин']], LS.get('ph_lvSec', 60))) +
+      row('Все серверы', 'Список, график, выбор своего сервера', btn('stSrv', '🌐 Открыть'))) +
+      '<div class="st-msg" style="color:var(--muted)">Данные об онлайне получены с majestic-rp.ru. О техработах на Las Vegas хелпер сообщит уведомлением.</div>';
     if (id === 'notif') {
       const n = main.notif || {};
       const kinds = [['update', 'Новая версия'], ['role', 'Смена роли'], ['premium', 'Premium и Ультра'], ['ban', 'Блокировка'], ['announce', 'Объявления'], ['chat', 'Сообщения в чате']];
@@ -162,6 +169,7 @@
     autostart: (on) => ov.autostartSet && ov.autostartSet(on),
     autohide: (on) => { LS.set('ph_autohide', on); if (ov.setAutohide) ov.setAutohide(on); },
     escHide: (on) => set('ph_escHide', on), openHome: (on) => set('ph_openHome', on), hint: (on) => set('ph_hint', on),
+    lvPill: (on) => { LS.set('ph_lvPill', on); if (window.PHX_online) window.PHX_online.pill(); },
     quickBtns: (on) => set('ph_quickBtns', on), compact: (on) => set('ph_compact', on), anim: (on) => set('ph_anim', on),
     searchAll: (on) => { set('ph_searchAll', on); }, hl: (on) => set('ph_hl', on), aiRow: (on) => set('ph_aiRow', on),
     accOn: (on) => { LS.set('ph_accOn', on); X.applyTheme(); syncAccent(); draw(); },
@@ -171,6 +179,8 @@
   };
   const SG = {
     startTab: (v) => { LS.set('ph_startTab', v); },
+    lvSrv: (v) => { LS.set('ph_lvSrv', v); if (window.PHX_online) window.PHX_online.pill(); },
+    lvSec: (v) => { LS.set('ph_lvSec', +v); if (window.PHX_online) window.PHX_online.schedule(); },
     theme: (v) => { LS.set('ph_theme', v); LS.set('ph_accOn', false); X.applyTheme(v); syncAccent(); draw(); },
     font: (v) => set('ph_font', v), limit: (v) => set('ph_limit', +v),
     width: (v) => { main.width = +v; ov.setPref && ov.setPref('width', +v); },
@@ -204,6 +214,7 @@
     const acc = box.querySelector('#stAcc'); if (acc) acc.oninput = () => { LS.set('ph_acc', acc.value); if (LS.get('ph_accOn', false)) { X.applyTheme(); syncAccent(); } };
     const at = box.querySelector('[data-tg="autostart"]'); if (at && ov.autostartGet) ov.autostartGet().then((on) => { at.checked = !!on; });
     const clrQ = box.querySelector('#stClrQ'); if (clrQ) clrQ.onclick = () => { LS.set('ph_q', []); clrQ.textContent = '✔ Очищено'; };
+    const ss = box.querySelector('#stSrv'); if (ss) ss.onclick = () => window.PHX_online && window.PHX_online.openServers();
     const nt = box.querySelector('#stNt'); if (nt) nt.onclick = () => ov.notifyTest && ov.notifyTest();
     const bk = box.querySelector('#stBak'); if (bk) bk.onclick = () => { if (window.PHX_tools && window.PHX_tools.openBackup) window.PHX_tools.openBackup(); };
     box.querySelectorAll('[id^="stC_"]').forEach((b) => (b.onclick = () => {
