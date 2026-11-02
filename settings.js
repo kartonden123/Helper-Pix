@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.3.2', 'Окно «Что нового» помещается в меню: три последние записи, кнопка «Понятно» всегда видна'],
         ['3.3.1', 'Вход через Discord работает через системный прокси и VPN, понятное сообщение при отсутствии связи, обновлённое окно входа'],
         ['3.3.0', 'Панель персонала: фильтры (в сети, Premium, персонал, заблокированные), история заказов с суммой для Администратора, мерцающие заглушки вместо «Загрузка…»'],
         ['3.2.1', 'Список «В сети» открывается мгновенно (готовится заранее и кэшируется), сервер отдаёт его быстрее, покупной Premium теперь виден в списке'],
@@ -322,10 +323,10 @@
     const ver = ov.version || ''; if (!ver) return;
     const last = LS.get('ph_lastver', ''); LS.set('ph_lastver', ver);
     if (!last || last === ver || document.getElementById('phNews')) return;
-    const items = NEWS.filter(([v]) => v === ver || NEWS.findIndex(([x]) => x === v) < 5).slice(0, 5);
+    const items = NEWS.filter(([v]) => v === ver || NEWS.findIndex(([x]) => x === v) < 3).slice(0, 3);
     const w = document.createElement('div'); w.id = 'phNews';
     w.style.cssText = 'position:fixed;inset:0;z-index:99998;display:grid;place-items:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)';
-    w.innerHTML = '<div style="width:min(440px,92vw);background:var(--solid,#1d1a20);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:22px;box-shadow:0 24px 70px -10px rgba(0,0,0,.8)"><div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.08em">ОБНОВЛЕНО ДО ' + esc(ver) + '</div><div style="font-size:20px;font-weight:800;margin:4px 0 12px">Что нового</div>' + items.map(([v, t]) => '<div style="display:grid;grid-template-columns:54px 1fr;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07);font-size:13px"><b style="color:var(--accent)">' + esc(v) + '</b><span style="color:var(--muted);line-height:1.45">' + esc(t) + '</span></div>').join('') + '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="abtn on" id="phNewsOk">Понятно</button></div></div>';
+    w.innerHTML = '<div style="width:min(440px,92vw);max-height:86vh;overflow-y:auto;background:var(--solid,#1d1a20);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:18px 20px;box-shadow:0 24px 70px -10px rgba(0,0,0,.8)"><div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.08em">ОБНОВЛЕНО ДО ' + esc(ver) + '</div><div style="font-size:18px;font-weight:800;margin:3px 0 8px">Что нового</div>' + items.map(([v, t]) => '<div style="display:grid;grid-template-columns:54px 1fr;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:12px"><b style="color:var(--accent)">' + esc(v) + '</b><span style="color:var(--muted);line-height:1.45">' + esc(t) + '</span></div>').join('') + '<div style="position:sticky;bottom:-18px;display:flex;justify-content:flex-end;padding:10px 0 2px;background:var(--solid,#1d1a20)"><button class="abtn on" id="phNewsOk">Понятно</button></div></div>';
     document.body.appendChild(w);
     const close = () => w.remove(); w.querySelector('#phNewsOk').onclick = close; w.addEventListener('click', (e) => { if (e.target === w) close(); });
   }, 2500);
