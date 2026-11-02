@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.6', 'Экран покупки на всю ширину, исправлен значок на тарифе'],
         ['3.1.5', 'Новый экран покупки Premium: вкладки Premium и Ультра, выбор срока, итоговая панель с кнопкой'],
         ['3.1.4', 'Скрытие роли Администратора; в режиме «Смотреть как» в списке «В сети» появляется фейковый пользователь, при возврате он удаляется'],
         ['3.1.2', 'Новая карточка Premium в «О программе» со статусом и тарифами, исправлен показ версии, Администратор может выдавать Premium и роли себе'],
