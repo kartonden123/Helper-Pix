@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.0.0', 'Автооплата Premium: USDT (TRC-20) подтверждается сама, перевод на карту подтверждает персонал'],
         ['2.10.0', 'Покупка Premium (10 ₽ неделя, 99 ₽ месяц, 1000 ₽ навсегда), история ролей и Premium, отметка «куплен / выдан»'],
         ['2.9.2', 'Роль «Главный Администратор» теперь просто «Администратор»'],
         ['2.9.1', 'Репозиторий переименован в Helper-Pix, автор Pix™'],

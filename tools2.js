@@ -101,24 +101,32 @@
       const o = d.order, hist = (d.history || []).slice(0, 8);
       const plans = PLAN_ORDER.map((k) => { const p = d.plans[k]; return '<button class="tl-card pm-plan' + (sel === k ? ' sel' : '') + '" data-p="' + k + '" style="text-align:center;flex:1;min-width:110px"><b style="font-size:20px">' + p.price + ' ₽</b><span>' + p.n + '</span></button>'; }).join('');
       let order = '';
-      if (o && o.status === 'new') order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>1. Переведите <b>' + o.price + ' ₽</b> на карту <b>' + eh(d.card) + '</b>' + (d.holder ? ' (' + eh(d.holder) + ')' : '') + '<br>2. В комментарии к переводу укажите код <b>' + eh(o.code) + '</b><br>3. Нажмите «Я оплатил». Персонал проверит перевод и выдаст Premium.</div><div class="actions"><button class="abtn" id="pmCopy">📋 Копировать карту</button><button class="abtn on" id="pmClaim">Я оплатил</button></div>';
+      window.__pmUsdt = null;
+      if (o && o.status === 'new' && o.method === 'usdt' && o.usdt) { window.__pmUsdt = o.code; order = '<div class="note" style="margin-top:12px;line-height:1.8"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ' (' + o.price + ' ₽)<br>Отправьте ровно <b>' + eh(o.usdt.amount) + ' USDT</b> в сети <b>TRON (TRC-20)</b> на адрес:<br><code style="user-select:text;word-break:break-all">' + eh(o.usdt.addr) + '</code><br><small>Сумма должна совпасть до последнего знака, по ней система находит ваш платёж. Premium включится сам через 1–3 минуты после подтверждения сети.</small></div><div class="actions"><button class="abtn" id="pmCopyA">📋 Адрес</button><button class="abtn" id="pmCopyS">📋 Сумма</button><button class="abtn on" id="pmCheck">Проверить оплату</button></div>'; }
+      else if (o && o.status === 'new' && d.auto && o.url) order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>Оплатить можно через СБП, картой Мир, Visa или Mastercard. После оплаты Premium включится сам.</div><div class="actions"><button class="abtn on" id="pmPay">Перейти к оплате</button><button class="abtn" id="pmCheck">Проверить оплату</button></div>';
+      else if (o && o.status === 'new') order = '<div class="note" style="margin-top:12px;line-height:1.7"><b>Заказ ' + eh(o.code) + '</b>: ' + eh(d.plans[o.plan].n) + ', <b>' + o.price + ' ₽</b><br>1. Переведите <b>' + o.price + ' ₽</b> на карту <b>' + eh(d.card) + '</b>' + (d.holder ? ' (' + eh(d.holder) + ')' : '') + '<br>2. В комментарии к переводу укажите код <b>' + eh(o.code) + '</b><br>3. Нажмите «Я оплатил». Персонал проверит перевод и выдаст Premium.</div><div class="actions"><button class="abtn" id="pmCopy">📋 Копировать карту</button><button class="abtn on" id="pmClaim">Я оплатил</button></div>';
       else if (o && o.status === 'claimed') order = '<div class="note" style="margin-top:12px">⏳ Заказ <b>' + eh(o.code) + '</b> ждёт проверки персоналом. Обычно это недолго. Premium появится сам.</div>';
       else if (o && o.status === 'rejected') order = '<div class="note" style="margin-top:12px;border-color:rgba(255,100,100,.5)">❌ Оплата заказа ' + eh(o.code) + ' отклонена' + (o.reason ? ': ' + eh(o.reason) : '') + '</div>';
       else if (o && o.status === 'paid') order = '<div class="note" style="margin-top:12px;border-color:rgba(61,220,132,.5)">✅ Оплата подтверждена, спасибо!</div>';
-      const canBuy = d.enabled && !(o && (o.status === 'new' || o.status === 'claimed'));
+      const canBuy = d.enabled && !(o && (o.status === 'claimed' || (o.status === 'new' && !d.auto)));
       $('.det').innerHTML = '<h2>⭐ Premium</h2><p class="t">Ваш статус: ' + premLine(d.premium) + '</p>'
         + '<p class="t">Premium даёт ИИ-помощника и расширенные возможности. Выберите срок:</p><div style="display:flex;gap:8px;flex-wrap:wrap">' + plans + '</div>'
-        + (d.enabled ? (canBuy ? '<div class="actions"><button class="abtn on" id="pmBuy">Купить за ' + d.plans[sel].price + ' ₽</button></div>' : '') : '<p class="t">Приём оплаты пока не включён администратором.</p>')
+        + (d.enabled ? (canBuy ? '<div class="actions">' + (d.auto || d.card ? '<button class="abtn on" id="pmBuy">' + (d.auto ? 'Оплатить ' : 'Перевод на карту ') + d.plans[sel].price + ' ₽</button>' : '') + (d.usdt ? '<button class="abtn' + (d.auto || d.card ? '' : ' on') + '" id="pmBuyU">💲 USDT (авто)</button>' : '') + '</div>' : '') : '<p class="t">Приём оплаты пока не включён администратором.</p>')
         + order
         + (hist.length ? '<h3 style="margin:16px 0 6px">История</h3>' + hist.map((h) => '<div class="urow" style="grid-template-columns:1fr auto"><span>' + eh(h.text) + '</span><small>' + new Date(h.t).toLocaleDateString('ru-RU') + '</small></div>').join('') : '');
       $('#bk') && ($('#bk').onclick = () => { clearInterval(timer); goBack(); });
       document.querySelectorAll('.pm-plan').forEach((b) => (b.onclick = () => { sel = b.dataset.p; draw(); }));
-      const buy = $('#pmBuy'); if (buy) buy.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel }); busy = false; if (r && r.error) alert(r.error); draw(); };
+      const bu = $('#pmBuyU'); if (bu) bu.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel, method: 'usdt' }); busy = false; if (r && r.error) alert(r.error); draw(); };
+      const ca = $('#pmCopyA'); if (ca) ca.onclick = () => X.copy(o.usdt.addr, ca);
+      const cs = $('#pmCopyS'); if (cs) cs.onclick = () => X.copy(o.usdt.amount, cs);
+      const buy = $('#pmBuy'); if (buy) buy.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/order', { plan: sel, method: 'card' }); busy = false; if (r && r.error) alert(r.error); else if (r && r.order && r.order.url && window.overlay.openUrl) window.overlay.openUrl(r.order.url); draw(); };
+      const py = $('#pmPay'); if (py) py.onclick = () => window.overlay.openUrl && window.overlay.openUrl(o.url);
+      const ck = $('#pmCheck'); if (ck) ck.onclick = async () => { if (busy) return; busy = true; await api('POST', '/pay/check', { code: o.code }); busy = false; draw(); };
       const cp = $('#pmCopy'); if (cp) cp.onclick = () => X.copy(String(d.card).replace(/\s/g, ''), cp);
       const cl = $('#pmClaim'); if (cl) cl.onclick = async () => { if (busy) return; busy = true; const r = await api('POST', '/pay/claim', { code: o.code }); busy = false; if (r && r.error) alert(r.error); draw(); };
     };
     await draw();
-    timer = setInterval(() => { if (!$('.det') || !/Premium/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer); draw(); }, 20000);
+    timer = setInterval(async () => { if (!$('.det') || !/Premium/.test(($('.det h2') || {}).textContent || '')) return clearInterval(timer); if (window.__pmUsdt) await api('POST', '/pay/check', { code: window.__pmUsdt }); draw(); }, 20000);
   }
 
   window.PHX_tools2 = { premium, pct, counter, stopwatch, numbers, random };

@@ -404,7 +404,7 @@ ipcMain.handle('set-pref', (_e, key, value) => {
   try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), [key]: value })); } catch (e) {}
   return { ok: true, value };
 });
-ipcMain.on('open-url', (_e, u) => { if (/^https:\/\/(github\.com\/kartonden123\/|docs\.google\.com\/forms\/d\/e\/|discord\.gg\/2C2zUgv3VC$)/.test(String(u))) require('electron').shell.openExternal(String(u)); });ipcMain.handle('ui-prefs', () => { const p = readPrefs(); return { snap: snapOn(), autohide: !!p.autohide, hotkey: hotKeys[0], width: winWidth(), toastPos: p.toastPos || 'br', toastSec: +p.toastSec || 8, toastSound: !!p.toastSound, notif: p.notif || {} }; });
+ipcMain.on('open-url', (_e, u) => { if (/^https:\/\/(github\.com\/kartonden123\/|docs\.google\.com\/forms\/d\/e\/|discord\.gg\/2C2zUgv3VC$|yoomoney\.ru\/checkout\/)/.test(String(u))) require('electron').shell.openExternal(String(u)); });ipcMain.handle('ui-prefs', () => { const p = readPrefs(); return { snap: snapOn(), autohide: !!p.autohide, hotkey: hotKeys[0], width: winWidth(), toastPos: p.toastPos || 'br', toastSec: +p.toastSec || 8, toastSound: !!p.toastSound, notif: p.notif || {} }; });
 ipcMain.on('ov-autohide', (_e, on) => { try { fs.writeFileSync(PREFS_FILE, JSON.stringify({ ...readPrefs(), autohide: !!on })); } catch (e) {} });
 ipcMain.on('ov-opacity', (_e, v) => { if (win && v >= 0.3 && v <= 1) win.setOpacity(v); });
 ipcMain.on('ov-position', (_e, side) => {
