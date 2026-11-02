@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.16', 'Исправлен показ срока выданного купленного тарифа: «неделя» больше не отображается как «навсегда»'],
         ['3.1.15', 'Подтверждения внутри меню: оверлей больше не сворачивается при выдаче купленного Premium'],
         ['3.1.14', 'Premium приходит сразу: экран покупки проверяет заказ каждые 3 секунды, исправлено, что после ручного снятия Premium покупка не включалась'],
         ['3.1.13', 'Экран покупки: заголовок меняется вместе с вкладкой Premium / Ультра'],

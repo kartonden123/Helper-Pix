@@ -129,7 +129,7 @@
     // сразу обновляем строку локально: список на сервере обновляется с задержкой до минуты
     if (cache) {
       const u = cache.users.find((x) => x.id === id);
-      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; u.premSource = r.premSource || ''; u.premUntil = undefined; } else if (kind === 'sp') { u.roles = r.roles; u.tier = (r.roles || []).some((x) => ['tester', 'partner', 'vip', 'dev', 'legend'].includes(x)) && !u.tier ? 'premium' : u.tier; u.premium = !!u.tier; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
+      if (u) { if (kind === 'prem') { u.premium = r.premium; u.tier = r.tier; u.premSource = r.premSource || ''; u.premUntil = r.premSource === 'paid' ? r.premUntil : undefined; } else if (kind === 'sp') { u.roles = r.roles; u.tier = (r.roles || []).some((x) => ['tester', 'partner', 'vip', 'dev', 'legend'].includes(x)) && !u.tier ? 'premium' : u.tier; u.premium = !!u.tier; } else if (kind === 'role') { u.role = r.role; u.roles = r.roles; u.premium = r.premium || !!r.role; if (r.role) u.tier = RK[r.role] >= 4 ? 'ultra' : 'premium'; } else u.banned = r.banned; }
     }
     return r;
   }
@@ -174,7 +174,7 @@
       const id = el.dataset.id, a = el.dataset.a;
       if (a === 'role') el.onchange = async () => { await act('role', id, el.value); drawUsers(); };
       else if (a === 'sp') el.onchange = async () => { const u = cache.users.find((x) => x.id === id); if (!u || !el.value) return; await act('sp', id, { role: el.value, on: !(u.roles || []).includes(el.value) }); drawUsers(); };
-      else if (a === 'tier') el.onchange = async () => { await act('prem', id, +el.value); drawUsers(); };
+      else if (a === 'tier') el.onchange = async () => { await act('prem', id, el.value.startsWith('pay:') ? el.value : +el.value); drawUsers(); };
       else el.onclick = async () => {
         const u = cache.users.find((x) => x.id === id); if (!u) return;
         await act(a, id, !u.banned); drawUsers();
