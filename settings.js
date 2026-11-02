@@ -8,7 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
-        ['3.0.0', 'Автооплата Premium: USDT (TRC-20) подтверждается сама, перевод на карту подтверждает персонал'],
+        ['3.0.0', 'Покупка Premium: перевод на карту с подтверждением персонала в Discord, готов приём через ЮKassa'],
         ['2.10.0', 'Покупка Premium (10 ₽ неделя, 99 ₽ месяц, 1000 ₽ навсегда), история ролей и Premium, отметка «куплен / выдан»'],
         ['2.9.2', 'Роль «Главный Администратор» теперь просто «Администратор»'],
         ['2.9.1', 'Репозиторий переименован в Helper-Pix, автор Pix™'],
@@ -167,6 +167,7 @@
       const ver = ov.version || '';
       const tierName = S.admin ? 'Администратор' : S.ultra ? 'Ультра Премиум' : S.premium ? 'Premium' : 'Обычный доступ';
       return `<div class="about" style="margin-bottom:12px"><img src="logo.png" alt=""><div><b>Helper Pix <span style="color:var(--accent)">by KATO</span></b><small>Версия ${esc(ver)} · ${esc(tierName)}</small></div></div>` +
+        card('Premium', row('Купить Premium', 'Неделя 10 ₽, месяц 99 ₽, навсегда 1000 ₽. Статус, срок и история покупок', btn('stBuy', '⭐ Купить Premium'))) +
         card('Обновления', row('Проверить обновления', '<span id="updRes">Новые версии приходят сами через 45 секунд после выхода</span>', btn('updChk', '🔄 Проверить')) +
         row('Все версии и изменения', 'Страница релизов на GitHub', btn('stGh', 'Открыть'))) +
         `<div class="st-h">Что нового</div><div class="st-card st-news">${NEWS.map(([v, t]) => `<div><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('')}</div>`;
@@ -254,6 +255,7 @@
       ['ph_theme', 'ph_acc', 'ph_accOn', 'ph_zoom', 'ph_op', 'ph_pos', 'ph_neon', 'ph_hint', 'ph_compact', 'ph_anim', 'ph_radius', 'ph_font', 'ph_limit', 'ph_searchAll', 'ph_aiRow', 'ph_hl', 'ph_quickBtns', 'ph_startTab', 'ph_escHide', 'ph_openHome'].forEach((k) => localStorage.removeItem(k));
       location.reload();
     };
+    const by = box.querySelector('#stBuy'); if (by) by.onclick = () => window.PHX_tools2 && window.PHX_tools2.premium();
     const gh = box.querySelector('#stGh'); if (gh) gh.onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Pix/releases');
     const uc = box.querySelector('#updChk'); if (uc) uc.onclick = async () => {
       const r = $('#updRes'); uc.disabled = true; r.textContent = 'Проверяю…';
