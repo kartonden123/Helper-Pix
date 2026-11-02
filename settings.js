@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.3.3', 'Панель иконок переделана: раскрывается прямо в строке по очереди, без наложения на поиск'],
         ['3.3.2', 'Окно «Что нового» помещается в меню: три последние записи, кнопка «Понятно» всегда видна'],
         ['3.3.1', 'Вход через Discord работает через системный прокси и VPN, понятное сообщение при отсутствии связи, обновлённое окно входа'],
         ['3.3.0', 'Панель персонала: фильтры (в сети, Premium, персонал, заблокированные), история заказов с суммой для Администратора, мерцающие заглушки вместо «Загрузка…»'],
