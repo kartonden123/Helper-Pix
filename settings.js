@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.1.9', 'Обновления: пока новая версия собирается на GitHub, хелпер молча повторяет проверку и не пишет «ошибка»'],
         ['3.1.8', 'Исправлена анимация при открытии меню: больше никаких повторных проигрываний и дёрганья'],
         ['3.1.7', 'Иконки в верхней панели собраны в «⋯» и плавно раскрываются при наведении, Администратор может снять себе Premium'],
         ['3.1.6', 'Экран покупки на всю ширину, исправлен значок на тарифе'],
@@ -277,7 +278,7 @@
       const r = $('#updRes'); uc.disabled = true; r.textContent = 'Проверяю…';
       const res = ov.checkUpdate ? await ov.checkUpdate() : { state: 'error' };
       uc.disabled = false;
-      const M = { latest: '✅ У вас последняя версия ' + (res.current || ''), available: '⬇ Вышла версия ' + res.version + ': нажмите «Обновить» в карточке вверху меню', downloading: '⬇ Обновляю до ' + res.version + '…', installing: '🔄 Устанавливаю, хелпер перезапустится', ready: '✅ Версия ' + res.version + ' скачана: нажмите «Перезапустить» вверху', dev: 'Режим разработки: проверка недоступна', error: '⚠ Не удалось проверить. Проверьте интернет.' };
+      const M = { latest: '✅ У вас последняя версия ' + (res.current || ''), available: '⬇ Вышла версия ' + res.version + ': нажмите «Обновить» в карточке вверху меню', downloading: '⬇ Обновляю до ' + res.version + '…', installing: '🔄 Устанавливаю, хелпер перезапустится', ready: '✅ Версия ' + res.version + ' скачана: нажмите «Перезапустить» вверху', dev: 'Режим разработки: проверка недоступна', building: '⏳ Новая версия ещё собирается, это 5–10 минут. Хелпер сам повторит проверку', error: '⚠ Не удалось проверить. Проверьте интернет.' };
       r.textContent = M[res.state] || M.error;
     };
   }

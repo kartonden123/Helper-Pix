@@ -257,9 +257,15 @@ async function watchRelease() {
     if (m && m[1] !== remoteSeen) { remoteSeen = m[1]; if (newer(m[1], app.getVersion())) checkUpdates(); }
   } catch (e) {}
 }
+// релиз уже опубликован, а установщик ещё собирается: файла latest.yml пока нет (404), это не ошибка, пробуем снова
+const isBuilding = (e) => /latest\.yml|404/.test(String((e && e.message) || e));
+let buildRetry = 0;
 function checkUpdates() {
   if (!app.isPackaged) return;
-  autoUpdater.checkForUpdates().catch(e => log('check error ' + e.message));
+  autoUpdater.checkForUpdates().then(() => { buildRetry = 0; }).catch(e => {
+    log('check error ' + String(e.message).split(String.fromCharCode(10))[0]);
+    if (isBuilding(e) && buildRetry < 40) { buildRetry++; setTimeout(checkUpdates, 45000); }
+  });
 }
 
 function updateTrayMenu() {
@@ -348,7 +354,7 @@ ipcMain.handle('update-check', async () => {
     if (v && v !== app.getVersion() && (!lastUpdate || lastUpdate.type === 'none' || !lastUpdate.type)) pushUpdate({ type: 'available', version: v });
     const cur = lastUpdate && lastUpdate.type && lastUpdate.type !== 'none' ? lastUpdate : null;
     return cur ? { state: cur.type, version: cur.version, current: app.getVersion() } : { state: 'latest', current: app.getVersion() };
-  } catch (e) { return { state: 'error', current: app.getVersion() }; }
+  } catch (e) { return { state: isBuilding(e) ? 'building' : 'error', current: app.getVersion() }; }
 });
 ipcMain.on('update-action', (_e, a) => {
   const u = lastUpdate || {};
