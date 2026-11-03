@@ -8,6 +8,7 @@
   const root = document.documentElement;
   const FONTS = { segoe: '"Segoe UI",Inter,system-ui,sans-serif', inter: 'Inter,"Segoe UI",system-ui,sans-serif', system: 'system-ui,-apple-system,"Segoe UI",sans-serif', mono: '"Cascadia Mono",Consolas,"Courier New",monospace' };
   const NEWS = [
+        ['3.4.0', 'Серверная часть перенесена на новую базу данных (D1): выше лимиты, быстрее ответы. Обновление обязательно для работы хелпера. Добавлено: проверка связи с сервером в «О программе», сколько дней осталось у Premium, копирование кода заказа в истории'],
         ['3.3.7', 'Панель иконок больше не выходит за рамку строки: поле поиска сжимается, освобождая место'],
         ['3.3.6', 'Новый стиль анимаций: плавное появление с лёгким размытием вместо резких «выскакиваний» и вращений'],
         ['3.3.5', 'Панель иконок: убрана розовая рамка вокруг строки при нажатии на кнопки, поправлены отступы'],
@@ -200,6 +201,7 @@
         + '<div style="padding:12px;border-radius:12px;background:rgba(0,0,0,.25)"><b>⭐ Premium</b><div style="margin:6px 0;color:var(--muted);font-size:12px;line-height:1.6">ИИ-помощник<br>Расширенные возможности</div><div style="font-size:12px"><b>10 ₽</b> неделя<br><b>99 ₽</b> месяц<br><b>1000 ₽</b> навсегда</div></div>'
         + '<div style="padding:12px;border-radius:12px;background:rgba(0,0,0,.25)"><b>💎 Ультра Премиум</b><div style="margin:6px 0;color:var(--muted);font-size:12px;line-height:1.6">Всё из Premium<br>Больше вопросов ИИ</div><div style="font-size:12px"><b>20 ₽</b> неделя<br><b>150 ₽</b> месяц<br><b>2000 ₽</b> навсегда</div></div></div>'
         + '<div style="margin-top:12px;display:flex;justify-content:flex-end">' + btn('stBuy', '⭐ Купить или продлить') + '</div></div>' +
+        card('Сервер', row('Связь с сервером', '<span id="srvSt">Проверяю…</span>', btn('srvChk', '🔄 Проверить'))) +
         card('Обновления', row('Проверить обновления', '<span id="updRes">Новые версии приходят сами через 45 секунд после выхода</span>', btn('updChk', '🔄 Проверить')) +
         row('Все версии и изменения', 'Страница релизов на GitHub', btn('stGh', 'Открыть'))) +
         `<div class="st-h">Что нового</div><div class="st-card st-news">${NEWS.map(([v, t]) => `<div><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('')}</div>`;
@@ -288,7 +290,12 @@
       ['ph_theme', 'ph_acc', 'ph_accOn', 'ph_zoom', 'ph_op', 'ph_pos', 'ph_neon', 'ph_hint', 'ph_compact', 'ph_anim', 'ph_radius', 'ph_font', 'ph_limit', 'ph_searchAll', 'ph_aiRow', 'ph_hl', 'ph_quickBtns', 'ph_startTab', 'ph_escHide', 'ph_openHome'].forEach((k) => localStorage.removeItem(k));
       location.reload();
     };
-    const pst = box.querySelector('#pmStat'); if (pst && ov.staffApi) ov.staffApi('GET', '/pay/info').then((d) => { const p = d && d.premium; if (!p || !p.source) { pst.textContent = 'Сейчас у вас обычный доступ'; return; } const t = p.tier === 'ultra' ? '💎 Ультра Премиум' : '⭐ Premium', src = p.source === 'paid' ? 'куплен' : p.source === 'granted' ? 'выдан персоналом' : 'даёт роль', u = p.source === 'paid' ? (p.until ? ', до ' + new Date(p.until).toLocaleDateString('ru-RU') : ', навсегда') : ''; pst.innerHTML = 'Сейчас: <b style="color:var(--text)">' + t + '</b> · ' + src + u; });
+    const srvSt = box.querySelector('#srvSt');
+    if (srvSt && ov.staffApi) {
+      const ping = async () => { srvSt.textContent = 'Проверяю…'; const t0 = performance.now(); const r = await ov.staffApi('GET', '/pay/info'); const ms = Math.round(performance.now() - t0); srvSt.innerHTML = r && !r.error ? '<b style="color:#3ddc84">● работает</b> · ответ ' + ms + ' мс · данные на новой базе' : '<b style="color:#ff8a8a">● нет связи</b> ' + esc((r && r.error) || ''); };
+      ping(); const sb = box.querySelector('#srvChk'); if (sb) sb.onclick = ping;
+    }
+    const pst = box.querySelector('#pmStat'); if (pst && ov.staffApi) ov.staffApi('GET', '/pay/info').then((d) => { const p = d && d.premium; if (!p || !p.source) { pst.textContent = 'Сейчас у вас обычный доступ'; return; } const t = p.tier === 'ultra' ? '💎 Ультра Премиум' : '⭐ Premium', src = p.source === 'paid' ? 'куплен' : p.source === 'granted' ? 'выдан персоналом' : 'даёт роль', u = p.source === 'paid' ? (p.until ? ', до ' + new Date(p.until).toLocaleDateString('ru-RU') + ' (осталось ' + Math.max(0, Math.ceil((p.until - Date.now()) / 86400000)) + ' дн.)' : ', навсегда') : ''; pst.innerHTML = 'Сейчас: <b style="color:var(--text)">' + t + '</b> · ' + src + u; });
     const by = box.querySelector('#stBuy'); if (by) by.onclick = () => window.PHX_tools2 && window.PHX_tools2.premium();
     const gh = box.querySelector('#stGh'); if (gh) gh.onclick = () => ov.openUrl && ov.openUrl('https://github.com/kartonden123/Helper-Pix/releases');
     const uc = box.querySelector('#updChk'); if (uc) uc.onclick = async () => {
