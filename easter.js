@@ -1,6 +1,7 @@
-/* Пасхалка: три быстрых нажатия на логотип в настройках → разбивается, вспышка, осколки, подпись.
+/* Пасхалка: три быстрых нажатия на логотип на главном экране → вспышка, осколки, подпись.
+   Доступна всем, независимо от Premium.
    Отключается переключателем «Анимации» (ph_anim) в разделе «Внешний вид».
-   Ничего не грузит из сети: картинка логотипа уже на экране, звук берётся из sounds/. */
+   Ничего не грузит из сети: картинка логотипа уже на экране, звук синтезируется кодом. */
 (function () {
   if (window.PHX_easter) return;
 
@@ -218,20 +219,63 @@
 
   /* --- перехват нажатий на логотип --- */
   function hook() {
-    const logo = document.querySelector('#stBody .about img, #stBody img[src="logo.png"]');
+    /* главный экран: логотип в панели слева от строки поиска.
+       Запасной вариант — логотип в «О программе», если панель почему-то недоступна. */
+    const logo = document.querySelector('#bar .logo, #bar img[src="logo.png"]')
+      || document.querySelector('#stBody .about img, #stBody img[src="logo.png"]');
     if (!logo) return;
     if (logo.dataset.phEgg === '1') return;
     logo.dataset.phEgg = '1';
+
+    const inBar = !!logo.closest('#bar');
     logo.style.cursor = 'pointer';
     logo.style.userSelect = 'none';
-    logo.style.webkitUserDrag = 'none';
     logo.draggable = false;
-    logo.title = '';
+    if (logo.style) { try { logo.style.webkitUserDrag = 'none'; } catch (e) {} }
 
-    /* драг картинки съедал бы быстрые нажатия — глушим */
+    /* драг картинки и перетаскивание окна съедали быстрые нажатия — глушим */
     logo.addEventListener('dragstart', (e) => e.preventDefault());
-    /* двойной клик выделяет картинку — тоже мешает счётчику */
+
+    /* Логотип в панели помечен как зона перетаскивания окна (-webkit-app-region: drag),
+       а в такой зоне клики не доходят до элемента. Гасим драг только на время,
+       пока пользователь кликает; окно по-прежнему можно тащить, потянув его. */
+    if (inBar) {
+      logo.style.webkitAppRegion = 'no-drag';
+      logo.style.cursor = 'pointer';
+    }
+
     logo.addEventListener('mousedown', (e) => e.preventDefault());
+
+    /* тихая подсказка: при наведении логотип чуть светится — видно, что он живой.
+       Появляется не сразу, чтобы не бросалось в глаза при каждом запуске. */
+    if (inBar) {
+      let shown = false;
+      try { shown = localStorage.getItem('ph_eggHint') === '1'; } catch (e) {}
+      if (!shown) {
+        setTimeout(() => {
+          try {
+            logo.animate(
+              [
+                { filter: 'brightness(1)' },
+                { filter: 'brightness(1.5) drop-shadow(0 0 10px rgba(255,77,109,.85))' },
+                { filter: 'brightness(1)' }
+              ],
+              { duration: 1400, easing: 'ease-in-out' }
+            );
+            localStorage.setItem('ph_eggHint', '1');
+          } catch (e) {}
+        }, 6000);
+      }
+      logo.addEventListener('mouseenter', () => {
+        if (busy) return;
+        logo.style.transition = 'filter .25s ease';
+        logo.style.filter = 'brightness(1.25) drop-shadow(0 0 8px rgba(255,77,109,.55))';
+      });
+      logo.addEventListener('mouseleave', () => {
+        if (busy) return;
+        logo.style.filter = '';
+      });
+    }
 
     logo.addEventListener('click', () => {
       if (busy) return;
@@ -242,7 +286,7 @@
       if (taps.length && now - taps[taps.length - 1] > WINDOW_MS) taps = [];
       taps.push(now);
 
-      /* счётчик виден сразу: 1 — «щелчок», 2 — «щелчок + свечение», 3 — сцена */
+      /* счётчик виден сразу: 2 — свечение, 3 — сцена */
       const n = taps.length;
       logo.style.filter = n >= 2
         ? 'brightness(1.35) drop-shadow(0 0 12px rgba(255,77,109,.75))'
@@ -256,20 +300,22 @@
       } else {
         /* лёгкий отклик: подпрыгивает тем сильнее, чем ближе к разгадке */
         const k = 1 + n * 0.06;
-        logo.animate(
-          [{ transform: 'scale(1)' }, { transform: 'scale(' + k + ')' }, { transform: 'scale(1)' }],
-          { duration: 180, easing: 'ease-out' }
-        );
+        try {
+          logo.animate(
+            [{ transform: 'scale(1)' }, { transform: 'scale(' + k + ')' }, { transform: 'scale(1)' }],
+            { duration: 180, easing: 'ease-out' }
+          );
+        } catch (e) {}
       }
     });
   }
 
-  /* логотип появляется перерисовкой настроек — следим за DOM */
+  /* логотип появляется перерисовкой — следим за DOM */
   const mo = new MutationObserver(() => hook());
   try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
-  /* настройки могут открыться до готовности DOM — пробуем ещё раз по горячим точкам */
-  [120, 500, 1200, 2500].forEach((t) => setTimeout(hook, t));
+  /* панель может собраться позже — пробуем ещё раз по горячим точкам */
+  [0, 120, 500, 1200, 2500].forEach((t) => setTimeout(hook, t));
   document.addEventListener('click', () => setTimeout(hook, 60), true);
 
   window.PHX_easter = { run, hook };
