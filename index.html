@@ -16,7 +16,9 @@ html,body{margin:0;background:transparent;color:var(--text);font:14px/1.45 "Sego
 .bar{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:12px 12px 12px 16px;box-shadow:0 10px 28px -10px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s,box-shadow .25s;animation:drop .45s cubic-bezier(.2,.8,.2,1) both;-webkit-app-region:drag}
 .bar>*{-webkit-app-region:no-drag}
 .bar:has(#q:focus){border-color:rgba(var(--acc-rgb),.5);box-shadow:0 0 0 1px rgba(var(--acc-rgb),.3),0 10px 28px -10px rgba(0,0,0,.55)}
-.logo{width:26px;height:26px;flex:none;-webkit-app-region:drag}
+.logo{width:26px;height:26px;flex:none;-webkit-app-region:no-drag;cursor:pointer;-webkit-user-drag:none;user-select:none}
+.logo:hover{filter:brightness(1.25) drop-shadow(0 0 8px rgba(255,77,109,.55))}
+.logo{transition:filter .25s ease}
 #q{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:19px;user-select:text}
 #q::placeholder{color:#6f6876}
 .seg{display:flex;background:rgba(255,255,255,.06);border-radius:999px;padding:3px;position:relative}
@@ -330,6 +332,7 @@ if(window.overlay&&window.overlay.resize){
 <script src="memo.js"></script>
 <script src="look.js"></script>
 <script src="settings.js"></script>
+<script src="easter.js"></script>
 <script src="online.js"></script>
 <script>
 // иконки панели собираются в группу: свёрнута в «⋯», при наведении плавно раскрывается
